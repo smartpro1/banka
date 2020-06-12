@@ -28,6 +28,9 @@ public class UserServiceImpl implements UserService{
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 	
+	@Autowired
+	private SMSService smsService;
+	
 	@Override
 	public User registerUser(UserRegPayload userRegPayload) {
 		checkIfUsernameOrEmailOrPhoneExists(userRegPayload);
@@ -45,8 +48,13 @@ public class UserServiceImpl implements UserService{
 		newUser.setUsername(userRegPayload.getUsername());
 		newUser.setPassword(passwordEncoder.encode(userRegPayload.getPassword()));
 		newUser.setRoles(Collections.singleton(userRole));
+		newUser.setAccountNumber(generateAccountNumber());
+		
 		
 		User registeredUser = userRepo.save(newUser);
+		
+		//smsService.sendSMS(registeredUser);
+		
 		return registeredUser;
 	}
 	
@@ -67,10 +75,25 @@ public class UserServiceImpl implements UserService{
 	}
 	
 	private void verifyPhoneNumber(String phoneNumber) {
-		if(!phoneNumber.startsWith("0") || phoneNumber.length() != 11) {
+		if(!phoneNumber.startsWith("0") || phoneNumber.length() != 11 || !phoneNumber.matches("[0-9]+")) {
 			throw new InvalidCredentialException("invalid phone number");
 		}
 		
+	}
+	
+	private String generateAccountNumber() {
+		String accountNumber = "";
+		
+		while (true) {
+		 int max = 999999999;
+	     int min = 100000000;
+	     accountNumber = "0" + (int)(Math.random() * (max - min + 1) + min);
+		 User user = userRepo.getByAccountNumber(accountNumber);
+		 
+		 if(user == null) break;
+		}
+		
+		return accountNumber;
 	}
 
 }

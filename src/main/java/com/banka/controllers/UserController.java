@@ -23,6 +23,7 @@ import com.banka.payloads.UserLoginPayload;
 import com.banka.payloads.UserRegPayload;
 import com.banka.security.JwtTokenProvider;
 import com.banka.services.FieldsValidationService;
+import com.banka.services.SMSService;
 import com.banka.services.UserService;
 import com.banka.validators.AppValidator;
 import static com.banka.security.SecurityConstants.TOKEN_PREFIX;
@@ -48,6 +49,7 @@ public class UserController {
 	@Autowired
 	private AuthenticationManager authenticationManager;
 	
+	
 	@PostMapping("/register-user")
 	public ResponseEntity<?> registerUser(@Valid @RequestBody UserRegPayload userRegPayload, BindingResult result) {
 		// compare passwords
@@ -71,6 +73,7 @@ public class UserController {
 		
 		SecurityContextHolder.getContext().setAuthentication(authentication);
 		String jwt = TOKEN_PREFIX + jwtTokenProvider.generateJwtToken(authentication);
+		
 		return ResponseEntity.ok(new JwtLoginSuccessResponse(true, jwt));
 	}
 	

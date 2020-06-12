@@ -18,6 +18,8 @@ public interface UserRepository extends JpaRepository<User, Long>{
 
 	User getById(Long id);
 
+	User getByAccountNumber(String accountNumber);
+
 	
 
 }
