@@ -24,4 +24,12 @@ public class GlobalResponseEntityExceptionHandler extends ResponseEntityExceptio
 		CredentialNotFoundExceptionResponse exceptionResponse = new CredentialNotFoundExceptionResponse(ex.getMessage());
 	    return new ResponseEntity(exceptionResponse, HttpStatus.BAD_REQUEST);
 	}
+	
+	@ExceptionHandler
+	public final ResponseEntity<Object> handleInvalidCredentialException(InvalidCredentialException ex, WebRequest req){
+		InvalidCredentialExceptionResponse exceptionResponse = new InvalidCredentialExceptionResponse(ex.getMessage());
+	    return new ResponseEntity(exceptionResponse, HttpStatus.BAD_REQUEST);
+	}
+	
+	
 }

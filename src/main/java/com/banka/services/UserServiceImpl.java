@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.banka.exceptions.CredentialAlreadyInUseException;
 import com.banka.exceptions.CredentialNotFoundException;
+import com.banka.exceptions.InvalidCredentialException;
 import com.banka.model.Role;
 import com.banka.model.RoleName;
 import com.banka.model.User;
@@ -29,10 +30,12 @@ public class UserServiceImpl implements UserService{
 	
 	@Override
 	public User registerUser(UserRegPayload userRegPayload) {
-		checkIfUsernameOrEmailExists(userRegPayload);
+		checkIfUsernameOrEmailOrPhoneExists(userRegPayload);
+		
+		verifyPhoneNumber(userRegPayload.getPhoneNumber());
 		
 		User newUser = new User();
-		Role userRole = roleRepo.findByName(RoleName.USER);
+		Role userRole = roleRepo.findByName(RoleName.ROLE_USER);
 		if (userRole == null) throw new CredentialNotFoundException("role not found");
 		
 		newUser.setFirstName(userRegPayload.getFirstName());
@@ -46,14 +49,26 @@ public class UserServiceImpl implements UserService{
 		User registeredUser = userRepo.save(newUser);
 		return registeredUser;
 	}
+	
 
-	private void checkIfUsernameOrEmailExists(UserRegPayload userRegPayload) {
+	private void checkIfUsernameOrEmailOrPhoneExists(UserRegPayload userRegPayload) {
+		if(userRepo.existsByPhoneNumber(userRegPayload.getPhoneNumber())) {
+			throw new CredentialAlreadyInUseException("phone number already exists, please choose another.");
+		}
+		
 		if(userRepo.existsByUsername(userRegPayload.getUsername())) {
 			throw new CredentialAlreadyInUseException("username already exists, please choose another.");
 		}
 		
 		if(userRepo.existsByEmail(userRegPayload.getEmail())) {
-			throw new CredentialAlreadyInUseException("email already in use, please choose another.");
+			throw new CredentialAlreadyInUseException("email already taken, kindly choose another.");
+		}
+		
+	}
+	
+	private void verifyPhoneNumber(String phoneNumber) {
+		if(!phoneNumber.startsWith("0") || phoneNumber.length() != 11) {
+			throw new InvalidCredentialException("invalid phone number");
 		}
 		
 	}

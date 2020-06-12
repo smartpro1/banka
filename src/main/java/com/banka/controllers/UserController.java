@@ -11,6 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -72,6 +73,12 @@ public class UserController {
 		String jwt = TOKEN_PREFIX + jwtTokenProvider.generateJwtToken(authentication);
 		return ResponseEntity.ok(new JwtLoginSuccessResponse(true, jwt));
 	}
+	
+	@GetMapping("/test")
+	public String test() {
+		return "test works";
+	}
+	
 	
 
 }

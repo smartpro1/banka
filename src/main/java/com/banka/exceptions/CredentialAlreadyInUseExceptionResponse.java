@@ -1,19 +1,20 @@
 package com.banka.exceptions;
 
 public class CredentialAlreadyInUseExceptionResponse {
-   private String credential;
+   private String credentialInUseException;
 
-public CredentialAlreadyInUseExceptionResponse(String credential) {
-	this.credential = credential;
+public CredentialAlreadyInUseExceptionResponse(String credentialInUseException) {
+	this.credentialInUseException = credentialInUseException;
 }
 
-public String getCredential() {
-	return credential;
+public String getCredentialInUseException() {
+	return credentialInUseException;
 }
 
-public void setCredential(String credential) {
-	this.credential = credential;
+public void setCredentialInUseException(String credentialInUseException) {
+	this.credentialInUseException = credentialInUseException;
 }
-   
+
+  
    
 }
