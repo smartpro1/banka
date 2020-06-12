@@ -50,10 +50,11 @@ public class UserServiceImpl implements UserService{
 		newUser.setRoles(Collections.singleton(userRole));
 		newUser.setAccountNumber(generateAccountNumber());
 		
+		//smsService.sendSMS(newUser);
 		
 		User registeredUser = userRepo.save(newUser);
 		
-		//smsService.sendSMS(registeredUser);
+		
 		
 		return registeredUser;
 	}
@@ -87,9 +88,12 @@ public class UserServiceImpl implements UserService{
 		while (true) {
 		 int max = 999999999;
 	     int min = 100000000;
+	     
+	     // generate 9digits number prepending it with 0 to form 10 digits account number
 	     accountNumber = "0" + (int)(Math.random() * (max - min + 1) + min);
 		 User user = userRepo.getByAccountNumber(accountNumber);
 		 
+		 // ensures account number is unique else it will be regenerated
 		 if(user == null) break;
 		}
 		

@@ -49,6 +49,9 @@ public class UserController {
 	@Autowired
 	private AuthenticationManager authenticationManager;
 	
+//	@Autowired
+//	private SMSService smsService;
+	
 	
 	@PostMapping("/register-user")
 	public ResponseEntity<?> registerUser(@Valid @RequestBody UserRegPayload userRegPayload, BindingResult result) {

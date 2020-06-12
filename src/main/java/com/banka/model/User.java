@@ -1,5 +1,6 @@
 package com.banka.model;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -19,8 +20,9 @@ public class User {
 	private String email;
 	@Column(updatable = false, unique = true)
 	private String username;
-	private String accountNumber;
 	private String password;
+	private String accountNumber;
+	BigDecimal accountBalance = new BigDecimal("0.00");
 	
 	
 	@Column(updatable = false)
@@ -118,6 +120,18 @@ public class User {
 
 	public void setPassword(String password) {
 		this.password = password;
+	}
+	
+	
+
+
+	public BigDecimal getAccountBalance() {
+		return accountBalance;
+	}
+
+
+	public void setAccountBalance(BigDecimal accountBalance) {
+		this.accountBalance = accountBalance;
 	}
 
 
