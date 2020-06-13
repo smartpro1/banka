@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.banka.model.User;
 import com.banka.payloads.JwtLoginSuccessResponse;
+import com.banka.payloads.TransferRequestPayload;
 import com.banka.payloads.UserLoginPayload;
 import com.banka.payloads.UserRegPayload;
 import com.banka.security.JwtTokenProvider;
@@ -27,6 +28,9 @@ import com.banka.services.SMSService;
 import com.banka.services.UserService;
 import com.banka.validators.AppValidator;
 import static com.banka.security.SecurityConstants.TOKEN_PREFIX;
+
+import java.math.BigDecimal;
+import java.security.Principal;
 
 
 @RestController
@@ -70,6 +74,7 @@ public class UserController {
 	public ResponseEntity<?> loginUser(@Valid @RequestBody UserLoginPayload UserLoginRequest, BindingResult result) {
 		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
 		if(errorMap != null) return errorMap;
+		
 		Authentication authentication = authenticationManager.authenticate(
 				new UsernamePasswordAuthenticationToken(
 						UserLoginRequest.getUsername(), UserLoginRequest.getPassword()));
@@ -80,9 +85,17 @@ public class UserController {
 		return ResponseEntity.ok(new JwtLoginSuccessResponse(true, jwt));
 	}
 	
-	@GetMapping("/test")
-	public String test() {
-		return "test works";
+	@PostMapping("/transfer-funds")
+	public ResponseEntity<?> transferFunds(@Valid @RequestBody TransferRequestPayload transferRequestPayload, BindingResult result, Principal principal) {
+		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
+		if(errorMap != null) return errorMap;
+		 userService.makeTransfer(transferRequestPayload, principal.getName());
+		return null;
+	}
+	
+	@GetMapping("/transfer-charges")
+	public BigDecimal test() {
+		return userService.getTransferCharges();
 	}
 	
 	

@@ -1,5 +1,6 @@
 package com.banka.services;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,10 +9,12 @@ import org.springframework.stereotype.Service;
 
 import com.banka.exceptions.CredentialAlreadyInUseException;
 import com.banka.exceptions.CredentialNotFoundException;
+import com.banka.exceptions.InsufficientFundException;
 import com.banka.exceptions.InvalidCredentialException;
 import com.banka.model.Role;
 import com.banka.model.RoleName;
 import com.banka.model.User;
+import com.banka.payloads.TransferRequestPayload;
 import com.banka.payloads.UserRegPayload;
 import com.banka.repositories.RoleRepository;
 import com.banka.repositories.UserRepository;
@@ -98,6 +101,64 @@ public class UserServiceImpl implements UserService{
 		}
 		
 		return accountNumber;
+	}
+
+
+	@Override
+	public void makeTransfer(TransferRequestPayload transferRequestPayload, String name) {
+		
+		verifyBeneficiaryAccountNumber(transferRequestPayload.getAccountNumber());
+		
+		User beneficiary = userRepo.getByAccountNumber(transferRequestPayload.getAccountNumber());
+		User sender = userRepo.getByUsername(name);
+		
+		if(beneficiary == null) {
+			throw new InvalidCredentialException("beneficiary's account number does not exist");
+		}
+		
+		if(name.length() < 1 || sender == null) {
+			throw new InvalidCredentialException("invalid user");
+		}
+		
+		BigDecimal transferCharges = getTransferCharges(); 
+		BigDecimal accountBalance = sender.getAccountBalance();
+		BigDecimal amountToTransfer = new BigDecimal(transferRequestPayload.getTransferAmount());
+		BigDecimal totalAmountToTransfer = transferCharges.add(amountToTransfer);
+		
+		if(totalAmountToTransfer.compareTo(amountToTransfer) < 0) {
+			 throw new InsufficientFundException("insufficient fund");
+		}
+		
+		accountBalance = accountBalance.subtract(amountToTransfer);
+		sender.setAccountBalance(accountBalance);
+		BigDecimal beneficiaryNewAcctBal = beneficiary.getAccountBalance().add(amountToTransfer);
+		beneficiary.setAccountBalance(beneficiaryNewAcctBal);
+		
+		userRepo.save(sender);
+		userRepo.save(beneficiary);
+		
+		
+		// send twilio notification to sender
+		smsService.sendSMS(sender, "debit", amountToTransfer, beneficiary.getAccountNumber());
+		
+		// send twilio notification to beneficiary
+		smsService.sendSMS(beneficiary, "credit", amountToTransfer, sender.getAccountNumber());
+		
+	}
+
+
+	public void verifyBeneficiaryAccountNumber(String accountNumber) {
+		if(!accountNumber.startsWith("0") || accountNumber.length() != 10 || !accountNumber.matches("[0-9]+")) {
+			throw new InvalidCredentialException("invalid beneficiary account number");
+		}
+		
+	}
+	
+	@Override
+	public BigDecimal getTransferCharges() {
+		String transferFee = "25.00";
+		BigDecimal transferCharges = new BigDecimal(transferFee);
+		return transferCharges;
 	}
 
 }

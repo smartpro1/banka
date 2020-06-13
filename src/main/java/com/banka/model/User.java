@@ -22,7 +22,7 @@ public class User {
 	private String username;
 	private String password;
 	private String accountNumber;
-	BigDecimal accountBalance = new BigDecimal("0.00");
+	private BigDecimal accountBalance = new BigDecimal("0.00");
 	
 	
 	@Column(updatable = false)
@@ -143,6 +143,16 @@ public class User {
 	public void setCreated_At(LocalDateTime created_At) {
 		this.created_At = created_At;
 	}
+	
+	
+	public LocalDateTime getUpdated_At() {
+		return updated_At;
+	}
+
+
+	public void setUpdated_At(LocalDateTime updated_At) {
+		this.updated_At = updated_At;
+	}
 
 
 	public Set<Role> getRoles() {
@@ -164,4 +174,14 @@ public class User {
 		this.updated_At = LocalDateTime.now();
 	}
 
+
+	@Override
+	public String toString() {
+		return "User [id=" + id + ", firstName=" + firstName + ", lastName=" + lastName + ", phoneNumber=" + phoneNumber
+				+ ", email=" + email + ", username=" + username + ", password=" + password + ", accountNumber="
+				+ accountNumber + ", accountBalance=" + accountBalance + ", created_At=" + created_At + ", updated_At="
+				+ updated_At + ", roles=" + roles + "]";
+	}
+
+	
 }

@@ -31,5 +31,11 @@ public class GlobalResponseEntityExceptionHandler extends ResponseEntityExceptio
 	    return new ResponseEntity(exceptionResponse, HttpStatus.BAD_REQUEST);
 	}
 	
+	@ExceptionHandler
+	public final ResponseEntity<Object> handleInsufficientFundException(InsufficientFundException ex, WebRequest req){
+		InsufficientFundExceptionResponse exceptionResponse = new InsufficientFundExceptionResponse(ex.getMessage());
+	    return new ResponseEntity(exceptionResponse, HttpStatus.BAD_REQUEST);
+	}
+	
 	
 }
