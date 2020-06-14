@@ -89,8 +89,9 @@ public class UserController {
 	public ResponseEntity<?> transferFunds(@Valid @RequestBody TransferRequestPayload transferRequestPayload, BindingResult result, Principal principal) {
 		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
 		if(errorMap != null) return errorMap;
+		
 		 userService.makeTransfer(transferRequestPayload, principal.getName());
-		return null;
+		return new ResponseEntity<String>("Successful", HttpStatus.OK);
 	}
 	
 	@GetMapping("/transfer-charges")

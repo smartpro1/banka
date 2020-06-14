@@ -3,6 +3,8 @@ package com.banka.services;
 import java.math.BigDecimal;
 import java.util.Collections;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,6 +20,7 @@ import com.banka.payloads.TransferRequestPayload;
 import com.banka.payloads.UserRegPayload;
 import com.banka.repositories.RoleRepository;
 import com.banka.repositories.UserRepository;
+import com.banka.security.JwtTokenProvider;
 
 @Service
 public class UserServiceImpl implements UserService{
@@ -33,6 +36,8 @@ public class UserServiceImpl implements UserService{
 	
 	@Autowired
 	private SMSService smsService;
+	
+	private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 	
 	@Override
 	public User registerUser(UserRegPayload userRegPayload) {
@@ -108,6 +113,7 @@ public class UserServiceImpl implements UserService{
 	public void makeTransfer(TransferRequestPayload transferRequestPayload, String name) {
 		
 		verifyBeneficiaryAccountNumber(transferRequestPayload.getAccountNumber());
+		verifyTransferFund(transferRequestPayload.getTransferAmount());
 		
 		User beneficiary = userRepo.getByAccountNumber(transferRequestPayload.getAccountNumber());
 		User sender = userRepo.getByUsername(name);
@@ -116,33 +122,34 @@ public class UserServiceImpl implements UserService{
 			throw new InvalidCredentialException("beneficiary's account number does not exist");
 		}
 		
-		if(name.length() < 1 || sender == null) {
+		if(name.length() < 5 || sender == null) {
 			throw new InvalidCredentialException("invalid user");
 		}
 		
 		BigDecimal transferCharges = getTransferCharges(); 
-		BigDecimal accountBalance = sender.getAccountBalance();
+		BigDecimal senderAccountBalance = sender.getAccountBalance();
 		BigDecimal amountToTransfer = new BigDecimal(transferRequestPayload.getTransferAmount());
-		BigDecimal totalAmountToTransfer = transferCharges.add(amountToTransfer);
+		BigDecimal totalDebit = transferCharges.add(amountToTransfer);
 		
-		if(totalAmountToTransfer.compareTo(amountToTransfer) < 0) {
+		if(senderAccountBalance.compareTo(amountToTransfer) < 0) {
 			 throw new InsufficientFundException("insufficient fund");
 		}
 		
-		accountBalance = accountBalance.subtract(amountToTransfer);
-		sender.setAccountBalance(accountBalance);
+		senderAccountBalance = senderAccountBalance.subtract(totalDebit);
+		sender.setAccountBalance(senderAccountBalance);
 		BigDecimal beneficiaryNewAcctBal = beneficiary.getAccountBalance().add(amountToTransfer);
 		beneficiary.setAccountBalance(beneficiaryNewAcctBal);
 		
-		userRepo.save(sender);
-		userRepo.save(beneficiary);
-		
 		
 		// send twilio notification to sender
-		smsService.sendSMS(sender, "debit", amountToTransfer, beneficiary.getAccountNumber());
+		
+		//smsService.sendSMS(sender, "debit", amountToTransfer, beneficiary.getAccountNumber());
 		
 		// send twilio notification to beneficiary
-		smsService.sendSMS(beneficiary, "credit", amountToTransfer, sender.getAccountNumber());
+		//smsService.sendSMS(beneficiary, "credit", amountToTransfer, sender.getAccountNumber());
+		
+		userRepo.save(sender);
+		userRepo.save(beneficiary);
 		
 	}
 
@@ -150,6 +157,13 @@ public class UserServiceImpl implements UserService{
 	public void verifyBeneficiaryAccountNumber(String accountNumber) {
 		if(!accountNumber.startsWith("0") || accountNumber.length() != 10 || !accountNumber.matches("[0-9]+")) {
 			throw new InvalidCredentialException("invalid beneficiary account number");
+		}
+		
+	}
+	
+	private void verifyTransferFund(String transferAmount) {
+		if(!transferAmount.matches("[0-9]+")) {
+			throw new InvalidCredentialException("invalid fund - fund must be all digits");
 		}
 		
 	}
