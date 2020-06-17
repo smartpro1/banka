@@ -6,6 +6,7 @@ import javax.persistence.*;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+@Entity
 public class Transaction {
 
 	@Id
@@ -18,17 +19,11 @@ public class Transaction {
 	private String username;
 	private RoleName role;
 	
-	//@ManyToOne with cashier
+	//@ManyToOne with User
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JsonIgnore
-	private Cashier cashier;
-	
-	// @ManyToOne with admin
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JsonIgnore
-	private Admin admin;
-	
-	
+	private User user;
+		
 
 	public Transaction() {
 	
@@ -82,27 +77,14 @@ public class Transaction {
 		this.role = role;
 	}
 
-	public Cashier getCashier() {
-		return cashier;
+	public User getUser() {
+		return user;
 	}
 
-	public void setCashier(Cashier cashier) {
-		this.cashier = cashier;
+	public void setUser(User user) {
+		this.user = user;
 	}
 
-	public Admin getAdmin() {
-		return admin;
-	}
-
-	public void setAdmin(Admin admin) {
-		this.admin = admin;
-	}
-	
-	//@ManyToOne with user later *Don't forget to add getters and setters*
-	
-	
-	
-	
-	
+   	
 	
 }

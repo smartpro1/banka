@@ -1,11 +1,14 @@
 package com.banka.model;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import javax.persistence.*;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 
 @Entity
@@ -13,34 +16,61 @@ public class User {
 	@Id
 	@GeneratedValue(strategy= GenerationType.IDENTITY)
 	private Long id;
-	
-	private String firstName;
-	private String lastName;
-	private String phoneNumber;
+	private String fullname;
+	private String sex;
 	private String email;
 	@Column(updatable = false, unique = true)
 	private String username;
 	private String password;
-	private String accountNumber;
-	private BigDecimal accountBalance = new BigDecimal("0.00");
-	
+	private byte isActive = 0;
+
 	
 	@Column(updatable = false)
 	private LocalDateTime created_At;
 	
 	private LocalDateTime updated_At;
 	 
+	// manyToMany with roles 
 	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(name = "users_roles", 
 			 joinColumns=@JoinColumn(name = "user_id"), 
 		     inverseJoinColumns=@JoinColumn(name = "role_id")) 
 	private Set<Role> roles = new HashSet<>();
 	
+	// oneToMany with Transaction
+	@OneToMany(mappedBy="user")
+	private List<Transaction> transactions = new ArrayList<>();
 	
+	// oneToOne with UserProfile
+	@OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL, mappedBy="user")
+	@JsonIgnore
+	private UserProfile userProfile;
+	
+	// oneToOne with AdminProfile
+		@OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL, mappedBy="admin")
+		@JsonIgnore
+		private AdminProfile adminProfile;
+	
+	// OneToOne with PasswordReset
+//	@OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy="user")
+//	@JsonIgnore
+//	private PasswordReset passwordReset;
 	
 	public User() {
 
 	}
+	
+	
+	public User(String fullname, String sex, String username, String email, String password) {
+		this.fullname = fullname;
+		this.sex = sex;
+		this.email = email;
+		this.username = username;
+		this.password = password;
+	}
+
+
+    
 
 
 	public Long getId() {
@@ -53,33 +83,23 @@ public class User {
 	}
 
 
-	public String getFirstName() {
-		return firstName;
+	public String getFullname() {
+		return fullname;
 	}
 
 
-	public void setFirstName(String firstName) {
-		this.firstName = firstName;
+	public void setFullname(String fullname) {
+		this.fullname = fullname;
 	}
 
 
-	public String getLastName() {
-		return lastName;
+	public String getSex() {
+		return sex;
 	}
 
 
-	public void setLastName(String lastName) {
-		this.lastName = lastName;
-	}
-
-
-	public String getPhoneNumber() {
-		return phoneNumber;
-	}
-
-
-	public void setPhoneNumber(String phoneNumber) {
-		this.phoneNumber = phoneNumber;
+	public void setSex(String sex) {
+		this.sex = sex;
 	}
 
 
@@ -103,16 +123,6 @@ public class User {
 	}
 
 
-	public String getAccountNumber() {
-		return accountNumber;
-	}
-
-
-	public void setAccountNumber(String accountNumber) {
-		this.accountNumber = accountNumber;
-	}
-
-
 	public String getPassword() {
 		return password;
 	}
@@ -120,18 +130,6 @@ public class User {
 
 	public void setPassword(String password) {
 		this.password = password;
-	}
-	
-	
-
-
-	public BigDecimal getAccountBalance() {
-		return accountBalance;
-	}
-
-
-	public void setAccountBalance(BigDecimal accountBalance) {
-		this.accountBalance = accountBalance;
 	}
 
 
@@ -143,8 +141,8 @@ public class User {
 	public void setCreated_At(LocalDateTime created_At) {
 		this.created_At = created_At;
 	}
-	
-	
+
+
 	public LocalDateTime getUpdated_At() {
 		return updated_At;
 	}
@@ -163,7 +161,50 @@ public class User {
 	public void setRoles(Set<Role> roles) {
 		this.roles = roles;
 	}
+
+
+	public List<Transaction> getTransactions() {
+		return transactions;
+	}
+
+
+	public void setTransactions(List<Transaction> transactions) {
+		this.transactions = transactions;
+	}
+
+
+	public UserProfile getUserProfile() {
+		return userProfile;
+	}
+
+
+	public void setUserProfile(UserProfile userProfile) {
+		this.userProfile = userProfile;
+	}
+
+
+	public AdminProfile getAdminProfile() {
+		return adminProfile;
+	}
+
+
+	public void setAdminProfile(AdminProfile adminProfile) {
+		this.adminProfile = adminProfile;
+	}
 	
+	
+
+
+	public byte getIsActive() {
+		return isActive;
+	}
+
+
+	public void setIsActive(byte isActive) {
+		this.isActive = isActive;
+	}
+
+
 	@PrePersist
 	protected void onCreate() {
 		this.created_At = LocalDateTime.now();
@@ -175,13 +216,7 @@ public class User {
 	}
 
 
-	@Override
-	public String toString() {
-		return "User [id=" + id + ", firstName=" + firstName + ", lastName=" + lastName + ", phoneNumber=" + phoneNumber
-				+ ", email=" + email + ", username=" + username + ", password=" + password + ", accountNumber="
-				+ accountNumber + ", accountBalance=" + accountBalance + ", created_At=" + created_At + ", updated_At="
-				+ updated_At + ", roles=" + roles + "]";
-	}
+	
 
 	
 }

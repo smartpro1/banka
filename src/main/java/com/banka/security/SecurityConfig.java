@@ -16,7 +16,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.banka.services.CustomUserDetailsService;
 
-import static com.banka.security.SecurityConstants.USER_URLS;
+//import static com.banka.security.SecurityConstants.USER_URLS;
 
 @Configuration
 @EnableWebSecurity

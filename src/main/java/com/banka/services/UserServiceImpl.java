@@ -3,8 +3,8 @@ package com.banka.services;
 import java.math.BigDecimal;
 import java.util.Collections;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -13,14 +13,17 @@ import com.banka.exceptions.CredentialAlreadyInUseException;
 import com.banka.exceptions.CredentialNotFoundException;
 import com.banka.exceptions.InsufficientFundException;
 import com.banka.exceptions.InvalidCredentialException;
+import com.banka.model.AdminProfile;
 import com.banka.model.Role;
 import com.banka.model.RoleName;
 import com.banka.model.User;
+import com.banka.model.UserProfile;
 import com.banka.payloads.TransferRequestPayload;
 import com.banka.payloads.UserRegPayload;
 import com.banka.repositories.RoleRepository;
+import com.banka.repositories.UserProfileRepository;
 import com.banka.repositories.UserRepository;
-import com.banka.security.JwtTokenProvider;
+
 
 @Service
 public class UserServiceImpl implements UserService{
@@ -32,33 +35,45 @@ public class UserServiceImpl implements UserService{
 	private RoleRepository roleRepo;
 	
 	@Autowired
+	private UserProfileRepository userProfileRepo;
+	
+	
+	@Autowired
 	private PasswordEncoder passwordEncoder;
 	
 	@Autowired
 	private SMSService smsService;
 	
-	private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
+	//private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 	
 	@Override
 	public User registerUser(UserRegPayload userRegPayload) {
-		checkIfUsernameOrEmailOrPhoneExists(userRegPayload);
+		checkIfUsernameOrEmailExists(userRegPayload);
 		
-		verifyPhoneNumber(userRegPayload.getPhoneNumber());
+		User newUser = new User(userRegPayload.getFullname(), userRegPayload.getSex(), userRegPayload.getUsername(), userRegPayload.getEmail(), 
+				passwordEncoder.encode(userRegPayload.getPassword()));
 		
-		User newUser = new User();
-		Role userRole = roleRepo.findByName(RoleName.ROLE_USER);
+		Role userRole = assignRole(userRegPayload);
+		
 		if (userRole == null) throw new CredentialNotFoundException("role not found");
 		
-		newUser.setFirstName(userRegPayload.getFirstName());
-		newUser.setLastName(userRegPayload.getLastName());
-		newUser.setPhoneNumber(userRegPayload.getPhoneNumber());
-		newUser.setEmail(userRegPayload.getEmail());
-		newUser.setUsername(userRegPayload.getUsername());
-		newUser.setPassword(passwordEncoder.encode(userRegPayload.getPassword()));
 		newUser.setRoles(Collections.singleton(userRole));
-		newUser.setAccountNumber(generateAccountNumber());
 		
-		//smsService.sendSMS(newUser);
+		if(userRegPayload.getRole().equalsIgnoreCase("cashier") || userRegPayload.getRole().equalsIgnoreCase("admin")) {
+			String staffRole = userRegPayload.getRole();
+			AdminProfile adminProfile = new AdminProfile(staffRole);
+			adminProfile.setAdmin(newUser);
+			newUser.setAdminProfile(adminProfile);
+		}else {
+			String phoneNumber = userRegPayload.getPhoneNumber();
+			verifyPhoneNumber(phoneNumber);
+			checkIfPhoneNumberExists(phoneNumber);
+			String accountNumber = generateAccountNumber();
+			UserProfile userProfile = new UserProfile(phoneNumber, accountNumber);
+			userProfile.setUser(newUser);
+			newUser.setUserProfile(userProfile);
+			//smsService.sendSMS(userRegPayload.getFullname(), phoneNumber, accountNumber);
+		}
 		
 		User registeredUser = userRepo.save(newUser);
 		
@@ -68,10 +83,7 @@ public class UserServiceImpl implements UserService{
 	}
 	
 
-	private void checkIfUsernameOrEmailOrPhoneExists(UserRegPayload userRegPayload) {
-		if(userRepo.existsByPhoneNumber(userRegPayload.getPhoneNumber())) {
-			throw new CredentialAlreadyInUseException("phone number already exists, please choose another.");
-		}
+	private void checkIfUsernameOrEmailExists(UserRegPayload userRegPayload) {
 		
 		if(userRepo.existsByUsername(userRegPayload.getUsername())) {
 			throw new CredentialAlreadyInUseException("username already exists, please choose another.");
@@ -90,6 +102,24 @@ public class UserServiceImpl implements UserService{
 		
 	}
 	
+	private void checkIfPhoneNumberExists(String phoneNumber) {
+		if(userProfileRepo.existsByPhoneNumber(phoneNumber)) {
+			throw new CredentialAlreadyInUseException("phone number already exists, please choose another.");
+		}
+		
+	}
+	
+	private Role assignRole(UserRegPayload userRegPayload) {
+		
+		if(userRegPayload.getRole().equalsIgnoreCase("admin")) {
+			return roleRepo.findByName(RoleName.ROLE_ADMIN);
+		} else if(userRegPayload.getRole().equalsIgnoreCase("cashier")) {
+			return roleRepo.findByName(RoleName.ROLE_CASHIER);
+		}else {
+			return roleRepo.findByName(RoleName.ROLE_USER);
+		}
+	}
+	
 	private String generateAccountNumber() {
 		String accountNumber = "";
 		
@@ -97,12 +127,12 @@ public class UserServiceImpl implements UserService{
 		 int max = 999999999;
 	     int min = 100000000;
 	     
-	     // generate 9digits number prepending it with 0 to form 10 digits account number
+	     // generates 9digits number prepending it with 0 to form 10 digits account number
 	     accountNumber = "0" + (int)(Math.random() * (max - min + 1) + min);
-		 User user = userRepo.getByAccountNumber(accountNumber);
+		 UserProfile userProfile = userProfileRepo.getByAccountNumber(accountNumber);
 		 
 		 // ensures account number is unique else it will be regenerated
-		 if(user == null) break;
+		 if(userProfile == null) break;
 		}
 		
 		return accountNumber;
@@ -115,7 +145,7 @@ public class UserServiceImpl implements UserService{
 		verifyBeneficiaryAccountNumber(transferRequestPayload.getAccountNumber());
 		verifyTransferFund(transferRequestPayload.getTransferAmount());
 		
-		User beneficiary = userRepo.getByAccountNumber(transferRequestPayload.getAccountNumber());
+		UserProfile beneficiary = userProfileRepo.getByAccountNumber(transferRequestPayload.getAccountNumber());
 		User sender = userRepo.getByUsername(name);
 		
 		if(beneficiary == null) {
@@ -127,7 +157,7 @@ public class UserServiceImpl implements UserService{
 		}
 		
 		BigDecimal transferCharges = getTransferCharges(); 
-		BigDecimal senderAccountBalance = sender.getAccountBalance();
+		BigDecimal senderAccountBalance = sender.getUserProfile().getAccountBalance();
 		BigDecimal amountToTransfer = new BigDecimal(transferRequestPayload.getTransferAmount());
 		BigDecimal totalDebit = transferCharges.add(amountToTransfer);
 		
@@ -136,7 +166,7 @@ public class UserServiceImpl implements UserService{
 		}
 		
 		senderAccountBalance = senderAccountBalance.subtract(totalDebit);
-		sender.setAccountBalance(senderAccountBalance);
+		sender.getUserProfile().setAccountBalance(senderAccountBalance);
 		BigDecimal beneficiaryNewAcctBal = beneficiary.getAccountBalance().add(amountToTransfer);
 		beneficiary.setAccountBalance(beneficiaryNewAcctBal);
 		
@@ -149,7 +179,7 @@ public class UserServiceImpl implements UserService{
 		//smsService.sendSMS(beneficiary, "credit", amountToTransfer, sender.getAccountNumber());
 		
 		userRepo.save(sender);
-		userRepo.save(beneficiary);
+		//userProfileRepo.save(beneficiary);
 		
 	}
 

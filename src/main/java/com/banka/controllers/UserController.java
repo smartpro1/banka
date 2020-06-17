@@ -10,12 +10,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+//import org.springframework.web.bind.annotation.CrossOrigin;
+//import org.springframework.web.bind.annotation.GetMapping;
+//import org.springframework.web.bind.annotation.PostMapping;
+//import org.springframework.web.bind.annotation.RequestBody;
+//import org.springframework.web.bind.annotation.RequestMapping;
+//import org.springframework.web.bind.annotation.RestController;
 
 import com.banka.model.User;
 import com.banka.payloads.JwtLoginSuccessResponse;
@@ -24,7 +25,6 @@ import com.banka.payloads.UserLoginPayload;
 import com.banka.payloads.UserRegPayload;
 import com.banka.security.JwtTokenProvider;
 import com.banka.services.FieldsValidationService;
-import com.banka.services.SMSService;
 import com.banka.services.UserService;
 import com.banka.validators.AppValidator;
 import static com.banka.security.SecurityConstants.TOKEN_PREFIX;

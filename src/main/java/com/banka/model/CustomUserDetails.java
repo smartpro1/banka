@@ -11,30 +11,29 @@ import org.springframework.security.core.userdetails.UserDetails;
 @SuppressWarnings("serial")
 public class CustomUserDetails implements UserDetails{
 	private Long id;
-	private String firstName;
-	private String lastName;
-	private String phoneNumber;
+	private String fullname;
+	private String sex;
 	private String email;
 	private String username;
-	private String accountNumber;
 	private String password;
+	private byte isActive;
 	private Collection<? extends GrantedAuthority> authorities;
 	
-	
-
-	public CustomUserDetails(Long id, String firstName, String lastName, String phoneNumber, String email, String username,
-			String accountNumber, String password, Collection<? extends GrantedAuthority> authorities) {
+	public CustomUserDetails(Long id, String fullname, String sex, String email, String username,
+			String password, byte isActive, Collection<? extends GrantedAuthority> authorities) {
+		super();
 		this.id = id;
-		this.firstName = firstName;
-		this.lastName = lastName;
-		this.phoneNumber = phoneNumber;
+		this.fullname = fullname;
+		this.sex = sex;
 		this.email = email;
 		this.username = username;
-		this.accountNumber = accountNumber;
 		this.password = password;
+		this.isActive = isActive;
 		this.authorities = authorities;
 	}
-	
+
+
+
 	public static CustomUserDetails grantedUser(User user) {
 		List<GrantedAuthority> authorities = user.getRoles()
 				.stream().map(role -> new SimpleGrantedAuthority(role.getName().name()))
@@ -42,13 +41,12 @@ public class CustomUserDetails implements UserDetails{
 		
 		return new CustomUserDetails(
 				user.getId(),
-				user.getFirstName(),
-				user.getLastName(),
-				user.getPhoneNumber(),
+				user.getFullname(),
+				user.getSex(),
 				user.getEmail(),
 				user.getUsername(),
-				user.getAccountNumber(),
 				user.getPassword(),
+				user.getIsActive(),
 				authorities
 				);
 	}
@@ -59,25 +57,26 @@ public class CustomUserDetails implements UserDetails{
 		return id;
 	}
 
-	public String getFirstName() {
-		return firstName;
+	public String getFullname() {
+		return fullname;
 	}
 
-	public String getLastName() {
-		return lastName;
+	public String getSex() {
+		return sex;
 	}
 
-	public String getPhoneNumber() {
-		return phoneNumber;
-	}
 
 	public String getEmail() {
 		return email;
 	}
 
-	public String getAccountNumber() {
-		return accountNumber;
+	
+
+	public byte getIsActive() {
+		return isActive;
 	}
+
+
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {

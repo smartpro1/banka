@@ -8,9 +8,10 @@ import javax.validation.constraints.Size;
 public class UserRegPayload {
    
 	@NotBlank(message="please enter your firstname")
-	private String firstName;
-	@NotBlank(message="please enter your lastname")
-	private String lastName;
+	@Size(min = 7, max = 20, message="fullname name must be between 7 - 40 characters long")
+	private String fullname;
+	@NotBlank(message="please enter sex")
+	private String sex;
 	@NotBlank(message="please enter your phone number")
 	@Size(min = 11, max = 11, message="phone number must be exactly eleven digits")
 	private String phoneNumber;
@@ -19,6 +20,9 @@ public class UserRegPayload {
 	@Size(min =5, message="username cannot be empty or less than five characters")
 	@Column(updatable = false, unique = true)
 	private String username;
+	@NotBlank(message="please enter role")
+	@Size(min = 4, max = 20, message="role must be between 5 - 20 characters long")
+	private String role;
 	@Size(min =6, message="password cannot be empty or less than six characters")
 	private String password;
 	
@@ -29,20 +33,20 @@ public class UserRegPayload {
 		
 	}
 
-	public String getFirstName() {
-		return firstName;
+	public String getFullname() {
+		return fullname;
 	}
 
-	public void setFirstName(String firstName) {
-		this.firstName = firstName;
+	public void setFullname(String fullname) {
+		this.fullname = fullname;
 	}
 
-	public String getLastName() {
-		return lastName;
+	public String getSex() {
+		return sex;
 	}
 
-	public void setLastName(String lastName) {
-		this.lastName = lastName;
+	public void setSex(String sex) {
+		this.sex = sex;
 	}
 
 	public String getPhoneNumber() {
@@ -69,6 +73,14 @@ public class UserRegPayload {
 		this.username = username;
 	}
 
+	public String getRole() {
+		return role;
+	}
+
+	public void setRole(String role) {
+		this.role = role;
+	}
+
 	public String getPassword() {
 		return password;
 	}
@@ -83,7 +95,8 @@ public class UserRegPayload {
 
 	public void setConfirmPassword(String confirmPassword) {
 		this.confirmPassword = confirmPassword;
-	};
-	
+	}
+
+    
 	
 }

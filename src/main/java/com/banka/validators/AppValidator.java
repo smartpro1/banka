@@ -3,11 +3,12 @@ package com.banka.validators;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
-
 import com.banka.payloads.UserRegPayload;
 
 @Component
 public class AppValidator implements Validator {
+
+	
 
 	@Override
 	public boolean supports(Class<?> clazz) {
@@ -23,9 +24,11 @@ public class AppValidator implements Validator {
 		
 		if(!userRegPayload.getPassword().equals(userRegPayload.getConfirmPassword())) {
 			errors.rejectValue("confirmPassword", "Match", "passwords must match");
-		}
+	}
 		
 	}
+	
+
 	
 
 }
