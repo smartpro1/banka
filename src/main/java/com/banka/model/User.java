@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Set;
 
 import javax.persistence.*;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 
@@ -18,6 +17,7 @@ public class User {
 	private Long id;
 	private String fullname;
 	private String sex;
+	@Column(unique = true)
 	private String email;
 	@Column(updatable = false, unique = true)
 	private String username;

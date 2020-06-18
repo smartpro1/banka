@@ -16,19 +16,17 @@ public class CustomUserDetails implements UserDetails{
 	private String email;
 	private String username;
 	private String password;
-	private byte isActive;
+	private byte isActive = 0;
 	private Collection<? extends GrantedAuthority> authorities;
 	
 	public CustomUserDetails(Long id, String fullname, String sex, String email, String username,
-			String password, byte isActive, Collection<? extends GrantedAuthority> authorities) {
-		super();
+			String password, Collection<? extends GrantedAuthority> authorities) {
 		this.id = id;
 		this.fullname = fullname;
 		this.sex = sex;
 		this.email = email;
 		this.username = username;
 		this.password = password;
-		this.isActive = isActive;
 		this.authorities = authorities;
 	}
 
@@ -46,7 +44,6 @@ public class CustomUserDetails implements UserDetails{
 				user.getEmail(),
 				user.getUsername(),
 				user.getPassword(),
-				user.getIsActive(),
 				authorities
 				);
 	}

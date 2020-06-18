@@ -204,5 +204,76 @@ public class UserServiceImpl implements UserService{
 		BigDecimal transferCharges = new BigDecimal(transferFee);
 		return transferCharges;
 	}
+	
+	
+	
+	@Override
+	public User deactivateUser(String username) {
+		User user = userRepo.getByUsername(username);
+		if(user == null) throw new CredentialNotFoundException("invalid user");
+		user.setIsActive((byte) 0);
+		userRepo.save(user);
+		return user;
+	}
+	
+	
+	
+	@Override
+	public User activateUser(String username) {
+		User user = userRepo.getByUsername(username);
+		if(user == null) throw new CredentialNotFoundException("invalid user");
+		user.setIsActive((byte) 1);
+		userRepo.save(user);
+		return user;
+	}
+	
+	@Override
+	public User deactivateCashier(String username) {
+		User user = userRepo.getByUsername(username);
+		if(user == null) throw new CredentialNotFoundException("invalid cashier");
+		user.setIsActive((byte) 0);
+		userRepo.save(user);
+		return user;
+	}
+	
+	
+	@Override
+	public User activateCashier(String username) {
+		User user = userRepo.getByUsername(username);
+		if(user == null) throw new CredentialNotFoundException("invalid cashier");
+		user.setIsActive((byte) 1);
+		userRepo.save(user);
+		return user;
+	}
+	
+	
+	@Override
+	public User getUserByUsernameOrEmailOrPhone(String usernameOrEmailOrPhone) {
+		User user = findByUsernameOrEmailOrPhone(usernameOrEmailOrPhone);
+		return user;
+	}
+
+
+	private User findByUsernameOrEmailOrPhone(String usernameOrEmailOrPhone) {
+		User user = userRepo.getByUsername(usernameOrEmailOrPhone);
+		if (user == null) {
+			user = userRepo.getByEmail(usernameOrEmailOrPhone);
+		}
+		
+		if(user == null) {
+			user = userRepo.getByPhone(usernameOrEmailOrPhone);
+			if (user == null) throw new CredentialNotFoundException("invalid user");
+		}
+		
+		return user;
+	}
+	
+	
+	
+	
+	
+	
+	
+	
 
 }

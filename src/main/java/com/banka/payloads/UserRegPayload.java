@@ -2,6 +2,7 @@ package com.banka.payloads;
 
 import javax.persistence.Column;
 import javax.persistence.Transient;
+import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
@@ -12,10 +13,9 @@ public class UserRegPayload {
 	private String fullname;
 	@NotBlank(message="please enter sex")
 	private String sex;
-	@NotBlank(message="please enter your phone number")
-	@Size(min = 11, max = 11, message="phone number must be exactly eleven digits")
 	private String phoneNumber;
 	@NotBlank(message="please enter your email")
+	@Email(message="your email is invalid")
 	private String email;
 	@Size(min =5, message="username cannot be empty or less than five characters")
 	@Column(updatable = false, unique = true)

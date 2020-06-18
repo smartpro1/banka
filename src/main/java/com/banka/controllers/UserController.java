@@ -75,6 +75,7 @@ public class UserController {
 		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
 		if(errorMap != null) return errorMap;
 		
+		
 		Authentication authentication = authenticationManager.authenticate(
 				new UsernamePasswordAuthenticationToken(
 						UserLoginRequest.getUsername(), UserLoginRequest.getPassword()));
@@ -99,6 +100,45 @@ public class UserController {
 		return userService.getTransferCharges();
 	}
 	
+	@PostMapping("deactivate-user/{username}")
+	public ResponseEntity<User> deactivateUser(@PathVariable String username) {
+		User deactivatedUser = userService.deactivateUser(username);
+		return new ResponseEntity<User>(deactivatedUser, HttpStatus.OK);
+		}
 	
-
+	@PostMapping("activate-user/{username}")
+	public ResponseEntity<User> activateUser(@PathVariable String username) {
+		User activatedUser = userService.activateUser(username);
+		return new ResponseEntity<User>(activatedUser, HttpStatus.OK);
+		}
+	
+	@PostMapping("deactivate-cashier/{username}")
+	public ResponseEntity<User> deactivateCashier(@PathVariable String username) {
+		User deactivatedUser = userService.deactivateCashier(username);
+		return new ResponseEntity<User>(deactivatedUser, HttpStatus.OK);
+		}
+	
+	@PostMapping("activate-cashier/{username}")
+	public ResponseEntity<User> activateCashier(@PathVariable String username) {
+		User deactivatedUser = userService.activateCashier(username);
+		return new ResponseEntity<User>(deactivatedUser, HttpStatus.OK);
+		}
+	
+	
+	@PostMapping("get-user-details/{usernameOrEmailOrPhone}")
+	public ResponseEntity<?> getUserByUsernameOrEmailOrPhone(@PathVariable String usernameOrEmailOrPhone){
+		User userDetails = userService.getUserByUsernameOrEmailOrPhone(usernameOrEmailOrPhone);
+		return new ResponseEntity<User>(userDetails, HttpStatus.OK);
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 }
