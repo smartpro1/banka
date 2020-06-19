@@ -20,6 +20,7 @@ import com.banka.model.User;
 import com.banka.model.UserProfile;
 import com.banka.payloads.TransferRequestPayload;
 import com.banka.payloads.UserRegPayload;
+import com.banka.repositories.AdminProfileRepository;
 import com.banka.repositories.RoleRepository;
 import com.banka.repositories.UserProfileRepository;
 import com.banka.repositories.UserRepository;
@@ -37,12 +38,14 @@ public class UserServiceImpl implements UserService{
 	@Autowired
 	private UserProfileRepository userProfileRepo;
 	
+	@Autowired
+	private AdminProfileRepository adminProfileRepo;
 	
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 	
-	@Autowired
-	private SMSService smsService;
+//	@Autowired
+//	private SMSService smsService;
 	
 	//private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 	
@@ -63,7 +66,9 @@ public class UserServiceImpl implements UserService{
 			String staffRole = userRegPayload.getRole();
 			AdminProfile adminProfile = new AdminProfile(staffRole);
 			adminProfile.setAdmin(newUser);
-			newUser.setAdminProfile(adminProfile);
+			userRepo.save(newUser);
+			adminProfileRepo.save(adminProfile);
+			//newUser.setAdminProfile(adminProfile);
 		}else {
 			String phoneNumber = userRegPayload.getPhoneNumber();
 			verifyPhoneNumber(phoneNumber);
@@ -71,15 +76,17 @@ public class UserServiceImpl implements UserService{
 			String accountNumber = generateAccountNumber();
 			UserProfile userProfile = new UserProfile(phoneNumber, accountNumber);
 			userProfile.setUser(newUser);
-			newUser.setUserProfile(userProfile);
+			 userRepo.save(newUser);
+			userProfileRepo.save(userProfile);
+			//newUser.setUserProfile(userProfile);
 			//smsService.sendSMS(userRegPayload.getFullname(), phoneNumber, accountNumber);
 		}
 		
-		User registeredUser = userRepo.save(newUser);
 		
 		
 		
-		return registeredUser;
+		
+		return newUser;
 	}
 	
 
@@ -142,44 +149,44 @@ public class UserServiceImpl implements UserService{
 	@Override
 	public void makeTransfer(TransferRequestPayload transferRequestPayload, String name) {
 		
-		verifyBeneficiaryAccountNumber(transferRequestPayload.getAccountNumber());
-		verifyTransferFund(transferRequestPayload.getTransferAmount());
-		
-		UserProfile beneficiary = userProfileRepo.getByAccountNumber(transferRequestPayload.getAccountNumber());
-		User sender = userRepo.getByUsername(name);
-		
-		if(beneficiary == null) {
-			throw new InvalidCredentialException("beneficiary's account number does not exist");
-		}
-		
-		if(name.length() < 5 || sender == null) {
-			throw new InvalidCredentialException("invalid user");
-		}
-		
-		BigDecimal transferCharges = getTransferCharges(); 
-		BigDecimal senderAccountBalance = sender.getUserProfile().getAccountBalance();
-		BigDecimal amountToTransfer = new BigDecimal(transferRequestPayload.getTransferAmount());
-		BigDecimal totalDebit = transferCharges.add(amountToTransfer);
-		
-		if(senderAccountBalance.compareTo(amountToTransfer) < 0) {
-			 throw new InsufficientFundException("insufficient fund");
-		}
-		
-		senderAccountBalance = senderAccountBalance.subtract(totalDebit);
-		sender.getUserProfile().setAccountBalance(senderAccountBalance);
-		BigDecimal beneficiaryNewAcctBal = beneficiary.getAccountBalance().add(amountToTransfer);
-		beneficiary.setAccountBalance(beneficiaryNewAcctBal);
-		
-		
-		// send twilio notification to sender
-		
-		//smsService.sendSMS(sender, "debit", amountToTransfer, beneficiary.getAccountNumber());
-		
-		// send twilio notification to beneficiary
-		//smsService.sendSMS(beneficiary, "credit", amountToTransfer, sender.getAccountNumber());
-		
-		userRepo.save(sender);
-		//userProfileRepo.save(beneficiary);
+//		verifyBeneficiaryAccountNumber(transferRequestPayload.getAccountNumber());
+//		verifyTransferFund(transferRequestPayload.getTransferAmount());
+//		
+//		UserProfile beneficiary = userProfileRepo.getByAccountNumber(transferRequestPayload.getAccountNumber());
+//		User sender = userRepo.getByUsername(name);
+//		
+//		if(beneficiary == null) {
+//			throw new InvalidCredentialException("beneficiary's account number does not exist");
+//		}
+//		
+//		if(name.length() < 5 || sender == null) {
+//			throw new InvalidCredentialException("invalid user");
+//		}
+//		
+//		BigDecimal transferCharges = getTransferCharges(); 
+//		BigDecimal senderAccountBalance = sender.getUserProfile().getAccountBalance();
+//		BigDecimal amountToTransfer = new BigDecimal(transferRequestPayload.getTransferAmount());
+//		BigDecimal totalDebit = transferCharges.add(amountToTransfer);
+//		
+//		if(senderAccountBalance.compareTo(amountToTransfer) < 0) {
+//			 throw new InsufficientFundException("insufficient fund");
+//		}
+//		
+//		senderAccountBalance = senderAccountBalance.subtract(totalDebit);
+//		sender.getUserProfile().setAccountBalance(senderAccountBalance);
+//		BigDecimal beneficiaryNewAcctBal = beneficiary.getAccountBalance().add(amountToTransfer);
+//		beneficiary.setAccountBalance(beneficiaryNewAcctBal);
+//		
+//		
+//		// send twilio notification to sender
+//		
+//		//smsService.sendSMS(sender, "debit", amountToTransfer, beneficiary.getAccountNumber());
+//		
+//		// send twilio notification to beneficiary
+//		//smsService.sendSMS(beneficiary, "credit", amountToTransfer, sender.getAccountNumber());
+//		
+//		userRepo.save(sender);
+//		//userProfileRepo.save(beneficiary);
 		
 	}
 
@@ -191,12 +198,12 @@ public class UserServiceImpl implements UserService{
 		
 	}
 	
-	private void verifyTransferFund(String transferAmount) {
-		if(!transferAmount.matches("[0-9]+")) {
-			throw new InvalidCredentialException("invalid fund - fund must be all digits");
-		}
-		
-	}
+//	private void verifyTransferFund(String transferAmount) {
+//		if(!transferAmount.matches("[0-9]+")) {
+//			throw new InvalidCredentialException("invalid fund - fund must be all digits");
+//		}
+//		
+//	}
 	
 	@Override
 	public BigDecimal getTransferCharges() {
@@ -248,25 +255,14 @@ public class UserServiceImpl implements UserService{
 	
 	
 	@Override
-	public User getUserByUsernameOrEmailOrPhone(String usernameOrEmailOrPhone) {
-		User user = findByUsernameOrEmailOrPhone(usernameOrEmailOrPhone);
+	public User getUserByUsernameOrEmail(String usernameOrEmail) {
+		User user = userRepo.getByUsernameOrEmail(usernameOrEmail, usernameOrEmail);
+		if (user == null) throw new CredentialNotFoundException("invalid user");
 		return user;
 	}
 
 
-	private User findByUsernameOrEmailOrPhone(String usernameOrEmailOrPhone) {
-		User user = userRepo.getByUsername(usernameOrEmailOrPhone);
-		if (user == null) {
-			user = userRepo.getByEmail(usernameOrEmailOrPhone);
-		}
-		
-		if(user == null) {
-			user = userRepo.getByPhone(usernameOrEmailOrPhone);
-			if (user == null) throw new CredentialNotFoundException("invalid user");
-		}
-		
-		return user;
-	}
+
 	
 	
 	

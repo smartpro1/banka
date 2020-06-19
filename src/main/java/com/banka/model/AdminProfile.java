@@ -14,9 +14,13 @@ public class AdminProfile {
 	private String jobDescription;
 	
 	// oneToOne with UserProfile
-	@OneToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name="user_id", nullable = false)
-	@JsonIgnore
+//	@OneToOne(fetch = FetchType.EAGER)
+//	@JoinColumn(name="user_id", nullable = false)
+//	@JsonIgnore
+//	private User admin;
+	
+	@OneToOne()
+	@JoinColumn(name="user_id")
 	private User admin;
 	
 	

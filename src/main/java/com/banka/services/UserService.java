@@ -23,5 +23,5 @@ User deactivateCashier(String username);
 
 User activateCashier(String username);
 
-User getUserByUsernameOrEmailOrPhone(String usernameOrEmailOrPhone);
+User getUserByUsernameOrEmail(String usernameOrEmail);
 }

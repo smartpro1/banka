@@ -17,9 +17,13 @@ public class UserProfile {
 	private BigDecimal accountBalance = new BigDecimal("0.00");
 	
 	// oneToOne with User
-	@OneToOne(fetch = FetchType.EAGER)
-	@JoinColumn(name="user_id", nullable = false)
-	@JsonIgnore
+//	@OneToOne(fetch = FetchType.EAGER)
+//	@JoinColumn(name="user_id", nullable = true)
+//	@JsonIgnore
+//	private User user;
+	
+	@OneToOne()
+	@JoinColumn(name="user_id")
 	private User user;
 
 	public UserProfile(String phoneNumber, String accountNumber) {

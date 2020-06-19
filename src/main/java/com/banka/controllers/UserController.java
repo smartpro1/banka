@@ -125,9 +125,9 @@ public class UserController {
 		}
 	
 	
-	@PostMapping("get-user-details/{usernameOrEmailOrPhone}")
-	public ResponseEntity<?> getUserByUsernameOrEmailOrPhone(@PathVariable String usernameOrEmailOrPhone){
-		User userDetails = userService.getUserByUsernameOrEmailOrPhone(usernameOrEmailOrPhone);
+	@PostMapping("get-user-details/{usernameOrEmail}")
+	public ResponseEntity<?> getUserByUsernameOrEmail(@PathVariable String usernameOrEmail){
+		User userDetails = userService.getUserByUsernameOrEmail(usernameOrEmail);
 		return new ResponseEntity<User>(userDetails, HttpStatus.OK);
 	}
 	
