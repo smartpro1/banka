@@ -24,6 +24,12 @@ public class AdminProfile {
 	private User admin;
 	
 	
+    
+	
+	
+	public AdminProfile() {
+		
+	}
 
 	public AdminProfile(String jobDescription) {
 		this.jobDescription = jobDescription;

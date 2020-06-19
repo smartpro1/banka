@@ -25,6 +25,12 @@ public class UserProfile {
 	@OneToOne()
 	@JoinColumn(name="user_id")
 	private User user;
+	
+	
+
+	public UserProfile() {
+		
+	}
 
 	public UserProfile(String phoneNumber, String accountNumber) {
 		this.phoneNumber = phoneNumber;
