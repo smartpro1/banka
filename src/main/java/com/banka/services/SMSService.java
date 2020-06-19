@@ -2,7 +2,6 @@ package com.banka.services;
 
 import java.math.BigDecimal;
 
-import com.banka.model.User;
 import com.banka.model.UserProfile;
 import com.twilio.rest.api.v2010.account.Message;
 

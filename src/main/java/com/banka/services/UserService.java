@@ -3,10 +3,11 @@ package com.banka.services;
 
 
 import java.math.BigDecimal;
-
 import com.banka.model.User;
+import com.banka.payloads.MakeDepositPayload;
 import com.banka.payloads.TransferRequestPayload;
 import com.banka.payloads.UserRegPayload;
+import com.banka.payloads.WithdrawalRequestPayload;
 
 public interface UserService {
 User registerUser(UserRegPayload userRegPayload);
@@ -24,4 +25,10 @@ User deactivateCashier(String username);
 User activateCashier(String username);
 
 User getUserByUsernameOrEmail(String usernameOrEmail);
+
+void makeWithdrawal(WithdrawalRequestPayload withdrawalRequestPayload);
+
+void makeDeposit(MakeDepositPayload makeDepositPayload);
+
+BigDecimal getWithdrawalCharges();
 }

@@ -20,9 +20,11 @@ import org.springframework.web.bind.annotation.*;
 
 import com.banka.model.User;
 import com.banka.payloads.JwtLoginSuccessResponse;
+import com.banka.payloads.MakeDepositPayload;
 import com.banka.payloads.TransferRequestPayload;
 import com.banka.payloads.UserLoginPayload;
 import com.banka.payloads.UserRegPayload;
+import com.banka.payloads.WithdrawalRequestPayload;
 import com.banka.security.JwtTokenProvider;
 import com.banka.services.FieldsValidationService;
 import com.banka.services.UserService;
@@ -87,7 +89,8 @@ public class UserController {
 	}
 	
 	@PostMapping("/transfer-funds")
-	public ResponseEntity<?> transferFunds(@Valid @RequestBody TransferRequestPayload transferRequestPayload, BindingResult result, Principal principal) {
+	public ResponseEntity<?> transferFunds(@Valid @RequestBody TransferRequestPayload transferRequestPayload,
+			                          BindingResult result, Principal principal) {
 		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
 		if(errorMap != null) return errorMap;
 		
@@ -132,13 +135,22 @@ public class UserController {
 	}
 	
 	
+	@PostMapping("/withdraw-funds")
+	public ResponseEntity<?> makeWithdrawal(@Valid @RequestBody WithdrawalRequestPayload withdrawalRequestPayload,
+			                     BindingResult result){
+		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
+		if(errorMap != null) return errorMap;
+		userService.makeWithdrawal(withdrawalRequestPayload);
+		return new ResponseEntity<String>("Successful", HttpStatus.OK);
+	}
 	
-	
-	
-	
-	
-	
-	
-	
+	@PostMapping("/deposit-funds")
+	public ResponseEntity<?> makeDeposit(@Valid @RequestBody MakeDepositPayload makeDepositPayload,
+			                     BindingResult result){
+		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
+		if(errorMap != null) return errorMap;
+		userService.makeDeposit(makeDepositPayload);
+		return new ResponseEntity<String>("Successful", HttpStatus.OK);
+	}
 	
 }

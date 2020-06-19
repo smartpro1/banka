@@ -3,6 +3,8 @@ package com.banka.services;
 import java.math.BigDecimal;
 import java.util.Collections;
 
+import javax.validation.Valid;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 //import org.slf4j.Logger;
@@ -20,8 +22,10 @@ import com.banka.model.Role;
 import com.banka.model.RoleName;
 import com.banka.model.User;
 import com.banka.model.UserProfile;
+import com.banka.payloads.MakeDepositPayload;
 import com.banka.payloads.TransferRequestPayload;
 import com.banka.payloads.UserRegPayload;
+import com.banka.payloads.WithdrawalRequestPayload;
 import com.banka.repositories.AdminProfileRepository;
 import com.banka.repositories.RoleRepository;
 import com.banka.repositories.UserProfileRepository;
@@ -167,7 +171,7 @@ public class UserServiceImpl implements UserService{
 		BigDecimal amountToTransfer = new BigDecimal(transferRequestPayload.getTransferAmount());
 		BigDecimal totalDebit = transferCharges.add(amountToTransfer);
 		
-		if(senderAccountBalance.compareTo(amountToTransfer) < 0) {
+		if(senderAccountBalance.compareTo(totalDebit) < 0) {
 			 throw new InsufficientFundException("insufficient fund");
 		}
 		
@@ -192,20 +196,6 @@ public class UserServiceImpl implements UserService{
 		
 	}
 
-
-	public void verifyBeneficiaryAccountNumber(String accountNumber) {
-		if(!accountNumber.startsWith("0") || accountNumber.length() != 10 || !accountNumber.matches("[0-9]+")) {
-			throw new InvalidCredentialException("invalid beneficiary account number");
-		}
-		
-	}
-	
-	private void verifyTransferFund(String transferAmount) {
-		if(!transferAmount.matches("[0-9]+")) {
-			throw new InvalidCredentialException("invalid fund - fund must be all digits");
-		}
-		
-	}
 	
 	@Override
 	public BigDecimal getTransferCharges() {
@@ -264,8 +254,66 @@ public class UserServiceImpl implements UserService{
 	}
 
 
+	@Override
+	public void makeWithdrawal(@Valid WithdrawalRequestPayload withdrawalRequestPayload) {
+		verifyBeneficiaryAccountNumber(withdrawalRequestPayload.getAccountNumber());
+		verifyTransferFund(withdrawalRequestPayload.getAmountToWithdraw());
+		
+	    UserProfile accountOwner = userProfileRepo.getByAccountNumber(withdrawalRequestPayload.getAccountNumber());
+		
+		if(accountOwner == null) throw new InvalidCredentialException("this account number does not exist");
+		BigDecimal withdrawalCharges = getWithdrawalCharges(); 
+		BigDecimal ownerAccountBalance = accountOwner.getAccountBalance();
+		BigDecimal amountToTransfer = new BigDecimal(withdrawalRequestPayload.getAmountToWithdraw());
+		BigDecimal totalDebit = withdrawalCharges.add(amountToTransfer);
+		
+		if(ownerAccountBalance.compareTo(totalDebit) < 0) {
+			 throw new InsufficientFundException("insufficient fund");
+		}
+		
+		BigDecimal newAcctBal = ownerAccountBalance.subtract(totalDebit);
+		accountOwner.setAccountBalance(newAcctBal);
+		userProfileRepo.save(accountOwner);
+	}
 
+
+	@Override
+	public void makeDeposit(MakeDepositPayload makeDepositPayload) {
+		verifyBeneficiaryAccountNumber(makeDepositPayload.getAccountNumber());
+		verifyTransferFund(makeDepositPayload.getDepositAmount());
+		
+		UserProfile beneficiary = userProfileRepo.getByAccountNumber(makeDepositPayload.getAccountNumber());
+		
+		if(beneficiary == null) throw new InvalidCredentialException("beneficiary's account number does not exist");
+		
+		BigDecimal amountToDeposit = new BigDecimal(makeDepositPayload.getDepositAmount());
+		BigDecimal newAccountBal = beneficiary.getAccountBalance().add(amountToDeposit);
+		beneficiary.setAccountBalance(newAccountBal);
+		userProfileRepo.save(beneficiary);
+	}
 	
+	@Override
+	public BigDecimal getWithdrawalCharges() {
+		String withdrawalFee = "50.00";
+		BigDecimal withdrawalCharges = new BigDecimal(withdrawalFee);
+		return withdrawalCharges;
+	}
+
+
+
+	public void verifyBeneficiaryAccountNumber(String accountNumber) {
+		if(!accountNumber.startsWith("0") || accountNumber.length() != 10 || !accountNumber.matches("[0-9]+")) {
+			throw new InvalidCredentialException("invalid beneficiary account number");
+		}
+		
+	}
+	
+	private void verifyTransferFund(String transferAmount) {
+		if(!transferAmount.matches("[0-9]+")) {
+			throw new InvalidCredentialException("invalid fund - fund must be all digits");
+		}
+		
+	}
 	
 	
 	
