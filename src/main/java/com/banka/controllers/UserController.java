@@ -137,19 +137,19 @@ public class UserController {
 	
 	@PostMapping("/withdraw-funds")
 	public ResponseEntity<?> makeWithdrawal(@Valid @RequestBody WithdrawalRequestPayload withdrawalRequestPayload,
-			                     BindingResult result){
+			                     BindingResult result, Principal principal){
 		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
 		if(errorMap != null) return errorMap;
-		userService.makeWithdrawal(withdrawalRequestPayload);
+		userService.makeWithdrawal(withdrawalRequestPayload, principal.getName());
 		return new ResponseEntity<String>("Successful", HttpStatus.OK);
 	}
 	
 	@PostMapping("/deposit-funds")
 	public ResponseEntity<?> makeDeposit(@Valid @RequestBody MakeDepositPayload makeDepositPayload,
-			                     BindingResult result){
+			                     BindingResult result, Principal principal){
 		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
 		if(errorMap != null) return errorMap;
-		userService.makeDeposit(makeDepositPayload);
+		userService.makeDeposit(makeDepositPayload, principal.getName());
 		return new ResponseEntity<String>("Successful", HttpStatus.OK);
 	}
 	

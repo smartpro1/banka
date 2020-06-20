@@ -38,37 +38,9 @@ public class User {
 	private Set<Role> roles = new HashSet<>();
 	
 	// oneToMany with Transaction
-	@OneToMany(mappedBy="user")
+	@OneToMany(cascade = CascadeType.ALL, mappedBy="user")
 	private List<Transaction> transactions = new ArrayList<>();
 	
-	// oneToOne with UserProfile
-//	@OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL, mappedBy="user")
-//	//@JsonIgnore
-//	private UserProfile userProfile;
-	
-//	 @OneToOne(cascade = CascadeType.ALL)
-//	    @JoinTable(name = "user_details", 
-//	      joinColumns = 
-//	        { @JoinColumn(name = "user_id", referencedColumnName = "id") },
-//	      inverseJoinColumns = 
-//	        { @JoinColumn(name = "profile_id", referencedColumnName = "id") })
-//	 private UserProfile userProfile;
-	
-	// oneToOne with AdminProfile
-//		@OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL, mappedBy="admin")
-//		//@JsonIgnore
-//		private AdminProfile adminProfile;
-		
-		
-//	   @OneToOne(cascade = CascadeType.ALL)
-//		    @JoinTable(name = "admin", 
-//		      joinColumns = 
-//		        { @JoinColumn(name = "user_id", referencedColumnName = "id") },
-//		      inverseJoinColumns = 
-//		        { @JoinColumn(name = "admin_id", referencedColumnName = "id") })
-//	   private AdminProfile adminProfile;
-	
-	// OneToOne with PasswordReset
 //	@OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy="user")
 //	@JsonIgnore
 //	private PasswordReset passwordReset;
@@ -190,25 +162,6 @@ public class User {
 	}
 
 
-//	public UserProfile getUserProfile() {
-//		return userProfile;
-//	}
-//
-//
-//	public void setUserProfile(UserProfile userProfile) {
-//		this.userProfile = userProfile;
-//	}
-//
-//
-//	public AdminProfile getAdminProfile() {
-//		return adminProfile;
-//	}
-//
-//
-//	public void setAdminProfile(AdminProfile adminProfile) {
-//		this.adminProfile = adminProfile;
-//	}
-//	
 	
 
 

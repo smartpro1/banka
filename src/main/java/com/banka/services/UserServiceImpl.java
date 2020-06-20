@@ -1,7 +1,9 @@
 package com.banka.services;
 
 import java.math.BigDecimal;
+import java.security.Principal;
 import java.util.Collections;
+import java.util.List;
 
 import javax.validation.Valid;
 
@@ -20,6 +22,8 @@ import com.banka.exceptions.InvalidCredentialException;
 import com.banka.model.AdminProfile;
 import com.banka.model.Role;
 import com.banka.model.RoleName;
+import com.banka.model.Transaction;
+import com.banka.model.TransactionType;
 import com.banka.model.User;
 import com.banka.model.UserProfile;
 import com.banka.payloads.MakeDepositPayload;
@@ -28,6 +32,7 @@ import com.banka.payloads.UserRegPayload;
 import com.banka.payloads.WithdrawalRequestPayload;
 import com.banka.repositories.AdminProfileRepository;
 import com.banka.repositories.RoleRepository;
+import com.banka.repositories.TransactionRepository;
 import com.banka.repositories.UserProfileRepository;
 import com.banka.repositories.UserRepository;
 
@@ -46,6 +51,9 @@ public class UserServiceImpl implements UserService{
 	
 	@Autowired
 	private AdminProfileRepository adminProfileRepo;
+	
+	@Autowired
+	private TransactionRepository transactionRepo;
 	
 	@Autowired
 	private PasswordEncoder passwordEncoder;
@@ -194,6 +202,23 @@ public class UserServiceImpl implements UserService{
 		userProfileRepo.save(senderUserProfile);
 		userProfileRepo.save(beneficiary);
 		
+		
+		// create transactions for sender and beneficiary
+		
+		Transaction senderTransaction = new Transaction(TransactionType.DEBIT, amountToTransfer, beneficiary.getAccountNumber(), 
+				                                          transferRequestPayload.getDescription(),null, sender);
+		List<Transaction> senderTransactions = sender.getTransactions();
+		senderTransactions.add(senderTransaction);
+		sender.setTransactions(senderTransactions);
+		userRepo.save(sender);
+		
+		sender.setTransactions(senderTransactions);
+		Transaction beneficiaryTransaction = new Transaction(TransactionType.DEBIT, amountToTransfer, senderUserProfile.getAccountNumber(),
+				                                  transferRequestPayload.getDescription(), null, beneficiary.getUser());
+		User beneficiaryUser = beneficiary.getUser();
+		List<Transaction> beneficiaryUserTransactions = beneficiaryUser.getTransactions();
+		beneficiaryUserTransactions.add(beneficiaryTransaction);
+		userRepo.save(beneficiaryUser);
 	}
 
 	
@@ -255,10 +280,11 @@ public class UserServiceImpl implements UserService{
 
 
 	@Override
-	public void makeWithdrawal(@Valid WithdrawalRequestPayload withdrawalRequestPayload) {
+	public void makeWithdrawal(@Valid WithdrawalRequestPayload withdrawalRequestPayload, String staffUsername) {
 		verifyBeneficiaryAccountNumber(withdrawalRequestPayload.getAccountNumber());
 		verifyTransferFund(withdrawalRequestPayload.getAmountToWithdraw());
 		
+		BigDecimal minimumWithdrawal = new BigDecimal("500");
 	    UserProfile accountOwner = userProfileRepo.getByAccountNumber(withdrawalRequestPayload.getAccountNumber());
 		
 		if(accountOwner == null) throw new InvalidCredentialException("this account number does not exist");
@@ -267,6 +293,10 @@ public class UserServiceImpl implements UserService{
 		BigDecimal amountToTransfer = new BigDecimal(withdrawalRequestPayload.getAmountToWithdraw());
 		BigDecimal totalDebit = withdrawalCharges.add(amountToTransfer);
 		
+		if(amountToTransfer.compareTo(minimumWithdrawal) < 0) {
+			 throw new InsufficientFundException("minimum withdrawal is " + minimumWithdrawal);
+		}
+		
 		if(ownerAccountBalance.compareTo(totalDebit) < 0) {
 			 throw new InsufficientFundException("insufficient fund");
 		}
@@ -274,22 +304,47 @@ public class UserServiceImpl implements UserService{
 		BigDecimal newAcctBal = ownerAccountBalance.subtract(totalDebit);
 		accountOwner.setAccountBalance(newAcctBal);
 		userProfileRepo.save(accountOwner);
+		
+		// Create transaction
+		User accountOwnerUser = createTransaction(accountOwner, "debit", staffUsername, amountToTransfer, null);
+		userRepo.save(accountOwnerUser);
 	}
 
 
 	@Override
-	public void makeDeposit(MakeDepositPayload makeDepositPayload) {
+	public void makeDeposit(MakeDepositPayload makeDepositPayload, String staffUsername) {
 		verifyBeneficiaryAccountNumber(makeDepositPayload.getAccountNumber());
 		verifyTransferFund(makeDepositPayload.getDepositAmount());
 		
+		BigDecimal minimumDeposit = new BigDecimal("100");
 		UserProfile beneficiary = userProfileRepo.getByAccountNumber(makeDepositPayload.getAccountNumber());
 		
 		if(beneficiary == null) throw new InvalidCredentialException("beneficiary's account number does not exist");
 		
 		BigDecimal amountToDeposit = new BigDecimal(makeDepositPayload.getDepositAmount());
+		
+		if(amountToDeposit.compareTo(minimumDeposit) < 0) {
+			 throw new InsufficientFundException("minimum deposit is " + minimumDeposit);
+		}
+		
 		BigDecimal newAccountBal = beneficiary.getAccountBalance().add(amountToDeposit);
 		beneficiary.setAccountBalance(newAccountBal);
 		userProfileRepo.save(beneficiary);
+		
+		User accountOwnerUser = createTransaction(beneficiary, "credit", staffUsername, amountToDeposit, makeDepositPayload.getDescription());
+		userRepo.save(accountOwnerUser);
+	}
+	
+	private User createTransaction(UserProfile userProfile, String trasactionType, String staffUsername, BigDecimal amount,String description) {
+		TransactionType transactType = TransactionType.DEBIT;
+		if(trasactionType.equals("credit")) transactType = TransactionType.CREDIT;
+		Transaction accountOwnerNewTransaction= new Transaction(transactType, amount, null,
+				description, staffUsername, userProfile.getUser());
+		User accountOwnerUser = userProfile.getUser();
+		List<Transaction> accountOwnerTransactions = accountOwnerUser.getTransactions();
+		accountOwnerTransactions.add(accountOwnerNewTransaction);
+		accountOwnerUser.setTransactions(accountOwnerTransactions);
+		return accountOwnerUser;
 	}
 	
 	@Override

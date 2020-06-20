@@ -5,6 +5,7 @@ public class TransferRequestPayload {
 	
 	private String accountNumber;
 	private String transferAmount;
+	private String description;
 	
 	public String getAccountNumber() {
 		return accountNumber;
@@ -17,6 +18,12 @@ public class TransferRequestPayload {
 	}
 	public void setTransferAmount(String transferAmount) {
 		this.transferAmount = transferAmount;
+	}
+	public String getDescription() {
+		return description;
+	}
+	public void setDescription(String description) {
+		this.description = description;
 	}
 	
 	

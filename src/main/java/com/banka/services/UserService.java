@@ -26,9 +26,9 @@ User activateCashier(String username);
 
 User getUserByUsernameOrEmail(String usernameOrEmail);
 
-void makeWithdrawal(WithdrawalRequestPayload withdrawalRequestPayload);
+void makeWithdrawal(WithdrawalRequestPayload withdrawalRequestPayload, String string);
 
-void makeDeposit(MakeDepositPayload makeDepositPayload);
+void makeDeposit(MakeDepositPayload makeDepositPayload, String string);
 
 BigDecimal getWithdrawalCharges();
 }

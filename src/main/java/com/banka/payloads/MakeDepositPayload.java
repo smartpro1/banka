@@ -6,6 +6,7 @@ public class MakeDepositPayload {
 	private String accountNumber;
 	private String depositAmount;
 	private String nameOfDepositor;
+	private String description;
 	
 	public String getAccountNumber() {
 		return accountNumber;
@@ -25,6 +26,12 @@ public class MakeDepositPayload {
 	}
 	public void setNameOfDepositor(String nameOfDepositor) {
 		this.nameOfDepositor = nameOfDepositor;
+	}
+	public String getDescription() {
+		return description;
+	}
+	public void setDescription(String description) {
+		this.description = description;
 	}
 	
 	

@@ -1,6 +1,7 @@
 package com.banka.model;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import javax.persistence.*;
 
@@ -11,13 +12,16 @@ public class Transaction {
 
 	@Id
 	@GeneratedValue(strategy= GenerationType.IDENTITY)
-	protected Long id;
+	private Long id;
 	
-	protected TransactionType transactionType;
+	private TransactionType transactionType;
 	private BigDecimal amount;
 	private String accountNumberInvolved;
-	private String username;
-	private RoleName role;
+	private String description;
+	private String staffInvolved;
+	@Column(updatable = false)
+	private LocalDateTime created_At;
+//	private RoleName role;
 	
 	//@ManyToOne with User
 	@ManyToOne(fetch = FetchType.LAZY)
@@ -28,63 +32,101 @@ public class Transaction {
 	public Transaction() {
 	
 	}
+	
+	
+	public Transaction(TransactionType transactionType, BigDecimal amount, String accountNumberInvolved, String description,
+			String staffInvolved, User user) {
+		this.transactionType = transactionType;
+		this.amount = amount;
+		this.accountNumberInvolved = accountNumberInvolved;
+		this.description = description;
+		this.staffInvolved = staffInvolved;
+		this.user = user;
+	}
+
+
+
+
+
 
 	public Long getId() {
 		return id;
 	}
 
+
 	public void setId(Long id) {
 		this.id = id;
 	}
+
 
 	public TransactionType getTransactionType() {
 		return transactionType;
 	}
 
+
 	public void setTransactionType(TransactionType transactionType) {
 		this.transactionType = transactionType;
 	}
+
 
 	public BigDecimal getAmount() {
 		return amount;
 	}
 
+
 	public void setAmount(BigDecimal amount) {
 		this.amount = amount;
 	}
+
 
 	public String getAccountNumberInvolved() {
 		return accountNumberInvolved;
 	}
 
+
 	public void setAccountNumberInvolved(String accountNumberInvolved) {
 		this.accountNumberInvolved = accountNumberInvolved;
 	}
 
-	public String getUsername() {
-		return username;
+
+	public String getDescription() {
+		return description;
 	}
 
-	public void setUsername(String username) {
-		this.username = username;
+
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
-	public RoleName getRole() {
-		return role;
+
+	public String getStaffInvolved() {
+		return staffInvolved;
 	}
 
-	public void setRole(RoleName role) {
-		this.role = role;
+
+	public void setStaffInvolved(String staffInvolved) {
+		this.staffInvolved = staffInvolved;
 	}
+
+
+	public LocalDateTime getCreated_At() {
+		return created_At;
+	}
+
 
 	public User getUser() {
 		return user;
 	}
 
+
 	public void setUser(User user) {
 		this.user = user;
 	}
 
-   	
+
+	@PrePersist
+	protected void onCreate() {
+		this.created_At = LocalDateTime.now();
+	}
 	
 }
