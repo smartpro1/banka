@@ -99,10 +99,10 @@ public class UserController {
 	}
 	
 	@GetMapping("/transfer-charges")
-	public BigDecimal test() {
+	public BigDecimal getTransferCharge() {
 		return userService.getTransferCharges();
 	}
-	
+	 
 	@PostMapping("deactivate-user/{username}")
 	public ResponseEntity<User> deactivateUser(@PathVariable String username) {
 		User deactivatedUser = userService.deactivateUser(username);
@@ -152,5 +152,7 @@ public class UserController {
 		userService.makeDeposit(makeDepositPayload, principal.getName());
 		return new ResponseEntity<String>("Successful", HttpStatus.OK);
 	}
+	
+
 	
 }
