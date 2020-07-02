@@ -37,5 +37,29 @@ public class GlobalResponseEntityExceptionHandler extends ResponseEntityExceptio
 	    return new ResponseEntity(exceptionResponse, HttpStatus.BAD_REQUEST);
 	}
 	
+	@ExceptionHandler
+	public final ResponseEntity<Object> handlePhoneNumberAlreadyInUseException(PhoneNumberAlreadyInUseException ex, WebRequest req){
+		PhoneNumberAlreadyInUseExceptionResponse exceptionResponse = new PhoneNumberAlreadyInUseExceptionResponse(ex.getMessage());
+	    return new ResponseEntity(exceptionResponse, HttpStatus.BAD_REQUEST);
+	}
+	
+	@ExceptionHandler
+	public final ResponseEntity<Object> handleEmailAlreadyInUseException(EmailAlreadyInUseException ex, WebRequest req){
+		EmailAlreadyInUseExceptionResponse exceptionResponse = new EmailAlreadyInUseExceptionResponse(ex.getMessage());
+	    return new ResponseEntity(exceptionResponse, HttpStatus.BAD_REQUEST);
+	}
+	
+	@ExceptionHandler
+	public final ResponseEntity<Object> handleUsernameAlreadyInUseException(UsernameAlreadyInUseException ex, WebRequest req){
+		UsernameAlreadyInUseExceptionResponse exceptionResponse = new UsernameAlreadyInUseExceptionResponse(ex.getMessage());
+	    return new ResponseEntity(exceptionResponse, HttpStatus.BAD_REQUEST);
+	}
+	
+	@ExceptionHandler
+	public final ResponseEntity<Object> handleInvalidPhoneNumberException(InvalidPhoneNumberException ex, WebRequest req){
+		InvalidPhoneNumberExceptionResponse exceptionResponse = new InvalidPhoneNumberExceptionResponse(ex.getMessage());
+	    return new ResponseEntity(exceptionResponse, HttpStatus.BAD_REQUEST);
+	}
+	
 	
 }

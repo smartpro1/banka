@@ -59,7 +59,7 @@ public class UserController {
 //	private SMSService smsService;
 	
 	
-	@PostMapping("/register-user")
+	@PostMapping("/signup")
 	public ResponseEntity<?> registerUser(@Valid @RequestBody UserRegPayload userRegPayload, BindingResult result) {
 		// compare passwords
 		appValidator.validate(userRegPayload, result);

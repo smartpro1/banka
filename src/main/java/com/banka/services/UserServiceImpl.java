@@ -16,8 +16,12 @@ import org.springframework.stereotype.Service;
 
 import com.banka.exceptions.CredentialAlreadyInUseException;
 import com.banka.exceptions.CredentialNotFoundException;
+import com.banka.exceptions.EmailAlreadyInUseException;
 import com.banka.exceptions.InsufficientFundException;
 import com.banka.exceptions.InvalidCredentialException;
+import com.banka.exceptions.InvalidPhoneNumberException;
+import com.banka.exceptions.PhoneNumberAlreadyInUseException;
+import com.banka.exceptions.UsernameAlreadyInUseException;
 import com.banka.model.AdminProfile;
 import com.banka.model.Role;
 import com.banka.model.RoleName;
@@ -69,11 +73,14 @@ public class UserServiceImpl implements UserService{
 		User newUser = new User(userRegPayload.getFullname(), userRegPayload.getSex(), userRegPayload.getUsername(), userRegPayload.getEmail(), 
 				passwordEncoder.encode(userRegPayload.getPassword()));
 		
+		if(userRegPayload.getRole() == null) userRegPayload.setRole("user");
 		Role userRole = assignRole(userRegPayload);
 		
 		if (userRole == null) throw new CredentialNotFoundException("role not found");
 		
 		newUser.setRoles(Collections.singleton(userRole));
+		
+		
 		
 		if(userRegPayload.getRole().equalsIgnoreCase("cashier") || userRegPayload.getRole().equalsIgnoreCase("admin")) {
 			String staffRole = userRegPayload.getRole();
@@ -102,25 +109,25 @@ public class UserServiceImpl implements UserService{
 	private void checkIfUsernameOrEmailExists(UserRegPayload userRegPayload) {
 		
 		if(userRepo.existsByUsername(userRegPayload.getUsername())) {
-			throw new CredentialAlreadyInUseException("username already exists, please choose another.");
+			throw new UsernameAlreadyInUseException("username already exists, please choose another.");
 		}
 		
 		if(userRepo.existsByEmail(userRegPayload.getEmail())) {
-			throw new CredentialAlreadyInUseException("email already taken, kindly choose another.");
+			throw new EmailAlreadyInUseException("email already taken, kindly choose another.");
 		}
 		
 	}
 	
 	private void verifyPhoneNumber(String phoneNumber) {
 		if(!phoneNumber.startsWith("0") || phoneNumber.length() != 11 || !phoneNumber.matches("[0-9]+")) {
-			throw new InvalidCredentialException("invalid phone number");
+			throw new InvalidPhoneNumberException("invalid phone number");
 		}
 		
 	}
 	
 	private void checkIfPhoneNumberExists(String phoneNumber) {
 		if(userProfileRepo.existsByPhoneNumber(phoneNumber)) {
-			throw new CredentialAlreadyInUseException("phone number already exists, please choose another.");
+			throw new PhoneNumberAlreadyInUseException("phone number already exists, please choose another.");
 		}
 		
 	}

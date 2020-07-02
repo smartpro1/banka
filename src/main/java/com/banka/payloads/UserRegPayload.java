@@ -20,8 +20,6 @@ public class UserRegPayload {
 	@Size(min =5, message="username cannot be empty or less than five characters")
 	@Column(updatable = false, unique = true)
 	private String username;
-	@NotBlank(message="please enter role")
-	@Size(min = 4, max = 20, message="role must be between 5 - 20 characters long")
 	private String role;
 	@Size(min =6, message="password cannot be empty or less than six characters")
 	private String password;
