@@ -23,7 +23,7 @@ public class CustomUserDetailsService implements UserDetailsService{
 	@Transactional
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		User user = userRepo.getByUsername(username);
-		if(user == null) throw new CredentialNotFoundException("user not found");
+		if(user == null) throw new CredentialNotFoundException("invalid username or password");
 		
 		return CustomUserDetails.grantedUser(user);
 	}
@@ -31,7 +31,7 @@ public class CustomUserDetailsService implements UserDetailsService{
 	// This method is used by JwtAuthenticationFilter
 	public UserDetails loadUserById(Long id) {
 		User user = userRepo.getById(id);
-		if(user == null) throw new CredentialNotFoundException("user not found");
+		if(user == null) throw new CredentialNotFoundException("invalid username or password");
 		
 		return CustomUserDetails.grantedUser(user);
 	}
