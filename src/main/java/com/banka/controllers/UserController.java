@@ -102,6 +102,11 @@ public class UserController {
 	public BigDecimal getTransferCharge() {
 		return userService.getTransferCharges();
 	}
+	
+	@PostMapping("/change-pin")
+	public String changePin() {
+		return null;
+	}
 	 
 	@PostMapping("deactivate-user/{username}")
 	public ResponseEntity<User> deactivateUser(@PathVariable String username) {

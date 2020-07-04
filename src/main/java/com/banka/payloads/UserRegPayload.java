@@ -9,7 +9,7 @@ import javax.validation.constraints.Size;
 public class UserRegPayload {
    
 	@NotBlank(message="please enter your firstname")
-	@Size(min = 7, max = 20, message="fullname name must be between 7 - 40 characters long")
+	@Size(min = 6, max = 20, message="fullname name must be between 6 - 40 characters long")
 	private String fullname;
 	@NotBlank(message="please enter sex")
 	private String sex;
@@ -17,7 +17,7 @@ public class UserRegPayload {
 	@NotBlank(message="please enter your email")
 	@Email(message="your email is invalid")
 	private String email;
-	@Size(min =5, message="username cannot be empty or less than five characters")
+	@Size(min = 4, message="username cannot be empty or less than four characters")
 	@Column(updatable = false, unique = true)
 	private String username;
 	private String role;
