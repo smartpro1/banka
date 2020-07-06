@@ -1,5 +1,6 @@
 package com.banka.controllers;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,8 +20,10 @@ import org.springframework.web.bind.annotation.*;
 //import org.springframework.web.bind.annotation.RestController;
 
 import com.banka.model.User;
+import com.banka.payloads.ChangePasswordRequest;
 import com.banka.payloads.JwtLoginSuccessResponse;
 import com.banka.payloads.MakeDepositPayload;
+import com.banka.payloads.PasswordResetRequest;
 import com.banka.payloads.TransferRequestPayload;
 import com.banka.payloads.UserLoginPayload;
 import com.banka.payloads.UserRegPayload;
@@ -29,6 +32,8 @@ import com.banka.security.JwtTokenProvider;
 import com.banka.services.FieldsValidationService;
 import com.banka.services.UserService;
 import com.banka.validators.AppValidator;
+import com.banka.validators.ChangePasswordValidator;
+
 import static com.banka.security.SecurityConstants.TOKEN_PREFIX;
 
 import java.math.BigDecimal;
@@ -54,6 +59,9 @@ public class UserController {
 	
 	@Autowired
 	private AuthenticationManager authenticationManager;
+	
+	@Autowired
+	private ChangePasswordValidator changePasswordValidator;
 	
 //	@Autowired
 //	private SMSService smsService;
@@ -103,10 +111,7 @@ public class UserController {
 		return userService.getTransferCharges();
 	}
 	
-	@PostMapping("/change-pin")
-	public String changePin() {
-		return null;
-	}
+	
 	 
 	@PostMapping("deactivate-user/{username}")
 	public ResponseEntity<User> deactivateUser(@PathVariable String username) {
@@ -156,6 +161,49 @@ public class UserController {
 		if(errorMap != null) return errorMap;
 		userService.makeDeposit(makeDepositPayload, principal.getName());
 		return new ResponseEntity<String>("Successful", HttpStatus.OK);
+	}
+	
+	
+	
+	@PostMapping("/forgot-password")
+	public ResponseEntity<?> forgotPassword(@Valid @RequestBody PasswordResetRequest passwordResetRequest, BindingResult result,  
+			HttpServletRequest httpServletRequest){
+		
+		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
+		if(errorMap != null) return errorMap;
+		userService.processForgotPassword(passwordResetRequest.getEmail(), httpServletRequest);
+		
+			
+		return new ResponseEntity<String>("reset password mail sent to " +passwordResetRequest.getEmail(), HttpStatus.OK);		
+		
+	}
+	
+	
+	@PostMapping("/reset-password")
+	public ResponseEntity<?> resetPassword(@Valid @RequestBody ChangePasswordRequest changePasswordRequest, BindingResult result){
+		// compare password
+		changePasswordValidator.validate(changePasswordRequest, result);
+		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
+		if(errorMap != null) return errorMap;
+        userService.resetPassword(changePasswordRequest.getPassword(), changePasswordRequest.getToken());
+        
+        return new ResponseEntity<String>("password reset successful", HttpStatus.OK);
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	@PostMapping("/change-pin")
+	public String changePin() {
+		return null;
 	}
 	
 

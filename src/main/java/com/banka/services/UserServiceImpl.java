@@ -1,9 +1,12 @@
 package com.banka.services;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
 import org.slf4j.Logger;
@@ -14,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import org.springframework.mail.SimpleMailMessage;
 import com.banka.exceptions.CredentialAlreadyInUseException;
 import com.banka.exceptions.CredentialNotFoundException;
 import com.banka.exceptions.EmailAlreadyInUseException;
@@ -23,6 +27,7 @@ import com.banka.exceptions.InvalidPhoneNumberException;
 import com.banka.exceptions.PhoneNumberAlreadyInUseException;
 import com.banka.exceptions.UsernameAlreadyInUseException;
 import com.banka.model.AdminProfile;
+import com.banka.model.PasswordReset;
 import com.banka.model.Role;
 import com.banka.model.RoleName;
 import com.banka.model.Transaction;
@@ -34,10 +39,12 @@ import com.banka.payloads.TransferRequestPayload;
 import com.banka.payloads.UserRegPayload;
 import com.banka.payloads.WithdrawalRequestPayload;
 import com.banka.repositories.AdminProfileRepository;
+import com.banka.repositories.PasswordResetRepository;
 import com.banka.repositories.RoleRepository;
 import com.banka.repositories.TransactionRepository;
 import com.banka.repositories.UserProfileRepository;
 import com.banka.repositories.UserRepository;
+
 
 
 @Service
@@ -56,6 +63,9 @@ public class UserServiceImpl implements UserService{
 	private AdminProfileRepository adminProfileRepo;
 	
 	@Autowired
+	private PasswordResetRepository passwordResetRepo;
+	
+	@Autowired
 	private TransactionRepository transactionRepo;
 	
 	@Autowired
@@ -63,6 +73,9 @@ public class UserServiceImpl implements UserService{
 	
 	@Autowired
 	private SMSService smsService;
+	
+	@Autowired
+	private EmailService emailService;
 	
 	private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 	
@@ -375,6 +388,62 @@ public class UserServiceImpl implements UserService{
 		}
 		
 	}
+
+
+	@Override
+	public void processForgotPassword(String email, HttpServletRequest httpServletRequest) {
+		User user = userRepo.getByEmail(email);
+		if(user == null) {
+			throw new InvalidCredentialException("sorry, it appears you do not have an account with us.");
+		}
+		
+		String generatedToken = generateResetToken();
+		int validityTimeInSeconds = 60 * 60 * 1/2; // 30 minutes
+		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime expiryDate = now.plusSeconds(validityTimeInSeconds);
+		
+		PasswordReset passwordReset = new PasswordReset(generatedToken, expiryDate, user);
+		passwordResetRepo.save(passwordReset);
+		
+		// something like this : https://mywebapp.com/reset?token=9e5bf4a8-66b8-433e-b91c-6382c1a25f00
+		String appUrl = httpServletRequest.getScheme() + "://" + httpServletRequest.getServerName();
+		// Email message
+		SimpleMailMessage passwordResetEmail = new SimpleMailMessage();
+		passwordResetEmail.setFrom("smartpromise380@gmail.com");
+		passwordResetEmail.setTo(email);
+		passwordResetEmail.setSubject("Password Reset Request");
+		passwordResetEmail.setText("To reset your password, click the link below:\n" + appUrl + ":3000/reset?token=" + generatedToken);
+		emailService.sendEmail(passwordResetEmail);
+		
+	}
+	
+	public void resetPassword(String password, String token) {
+		LocalDateTime timeOfReset = LocalDateTime.now();
+		PasswordReset passwordReset = passwordResetRepo.findByResetToken(token);
+		User user = passwordReset.getUser();
+		
+		if(passwordReset == null || user == null) {
+			throw new InvalidCredentialException("invalid or expired token");
+		}
+		
+		LocalDateTime expiryDate = passwordReset.getExpiryDate();
+		if(timeOfReset.isAfter(expiryDate)) {
+			throw new InvalidCredentialException("expired token, please reset password again.");
+		}
+		
+	
+		user.setPassword(passwordEncoder.encode(password));
+		userRepo.save(user);
+		passwordResetRepo.deleteById(passwordReset.getId());	
+	}
+	
+	public String generateResetToken() {
+		String resetToken = UUID.randomUUID().toString();
+		return resetToken;		
+	}
+
+
+	
 	
 	
 	
