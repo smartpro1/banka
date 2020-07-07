@@ -15,7 +15,7 @@ import com.banka.payloads.UserRegPayload;
 import com.banka.payloads.WithdrawalRequestPayload;
 
 public interface UserService {
-User registerUser(UserRegPayload userRegPayload);
+User registerUser(UserRegPayload userRegPayload, HttpServletRequest httpServletRequest);
 
 void makeTransfer(TransferRequestPayload transferRequestPayload, String name);
 

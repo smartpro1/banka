@@ -74,7 +74,7 @@ public class UserController {
 	
 	
 	@PostMapping("/signup")
-	public ResponseEntity<?> registerUser(@Valid @RequestBody UserRegPayload userRegPayload, BindingResult result) {
+	public ResponseEntity<?> registerUser(@Valid @RequestBody UserRegPayload userRegPayload, BindingResult result, HttpServletRequest httpServletRequest) {
 		// compare passwords
 		appValidator.validate(userRegPayload, result);
 		
@@ -82,7 +82,7 @@ public class UserController {
 		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
 		if(errorMap != null) return errorMap;
 		
-		User newUser = userService.registerUser(userRegPayload);
+		User newUser = userService.registerUser(userRegPayload, httpServletRequest);
 		return new ResponseEntity<User>(newUser, HttpStatus.CREATED);
 	}
 	

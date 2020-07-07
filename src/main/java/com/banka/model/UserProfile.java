@@ -15,6 +15,7 @@ public class UserProfile {
 	private String phoneNumber;
 	private String accountNumber;
 	private BigDecimal accountBalance = new BigDecimal("0.00");
+	private String transferPin;
 	
 	// oneToOne with User
 //	@OneToOne(fetch = FetchType.EAGER)
@@ -32,9 +33,10 @@ public class UserProfile {
 		
 	}
 
-	public UserProfile(String phoneNumber, String accountNumber) {
+	public UserProfile(String phoneNumber, String accountNumber, String transferPin) {
 		this.phoneNumber = phoneNumber;
 		this.accountNumber = accountNumber;
+		this.transferPin = transferPin;
 	}
 
 	public Long getId() {
@@ -75,6 +77,14 @@ public class UserProfile {
 
 	public void setUser(User user) {
 		this.user = user;
+	}
+
+	public String getTransferPin() {
+		return transferPin;
+	}
+
+	public void setTransferPin(String transferPin) {
+		this.transferPin = transferPin;
 	}
 	
 	

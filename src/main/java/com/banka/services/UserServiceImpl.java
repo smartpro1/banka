@@ -28,6 +28,7 @@ import com.banka.exceptions.PhoneNumberAlreadyInUseException;
 import com.banka.exceptions.UsernameAlreadyInUseException;
 import com.banka.model.AdminProfile;
 import com.banka.model.PasswordReset;
+import com.banka.model.PinReset;
 import com.banka.model.Role;
 import com.banka.model.RoleName;
 import com.banka.model.Transaction;
@@ -41,6 +42,7 @@ import com.banka.payloads.UserRegPayload;
 import com.banka.payloads.WithdrawalRequestPayload;
 import com.banka.repositories.AdminProfileRepository;
 import com.banka.repositories.PasswordResetRepository;
+import com.banka.repositories.PinResetRepository;
 import com.banka.repositories.RoleRepository;
 import com.banka.repositories.TransactionRepository;
 import com.banka.repositories.UserProfileRepository;
@@ -67,6 +69,9 @@ public class UserServiceImpl implements UserService{
 	private PasswordResetRepository passwordResetRepo;
 	
 	@Autowired
+	private PinResetRepository pinResetRepo;
+	
+	@Autowired
 	private TransactionRepository transactionRepo;
 	
 	@Autowired
@@ -81,7 +86,7 @@ public class UserServiceImpl implements UserService{
 	private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 	
 	@Override
-	public User registerUser(UserRegPayload userRegPayload) {
+	public User registerUser(UserRegPayload userRegPayload, HttpServletRequest httpServletRequest) {
 		checkIfUsernameOrEmailExists(userRegPayload);
 		
 		User newUser = new User(userRegPayload.getFullname(), userRegPayload.getSex(), userRegPayload.getUsername(), userRegPayload.getEmail(), 
@@ -108,15 +113,45 @@ public class UserServiceImpl implements UserService{
 			verifyPhoneNumber(phoneNumber);
 			checkIfPhoneNumberExists(phoneNumber);
 			String accountNumber = generateAccountNumber();
-			UserProfile userProfile = new UserProfile(phoneNumber, accountNumber);
+			String transferPin = generateTransferPin();
+			UserProfile userProfile = new UserProfile(phoneNumber, accountNumber, passwordEncoder.encode(transferPin));
 			userProfile.setUser(newUser);
 			 userRepo.save(newUser);
 			userProfileRepo.save(userProfile);
 			//newUser.setUserProfile(userProfile);
 			//smsService.sendSMS(userRegPayload.getFullname(), phoneNumber, accountNumber);
+			
+			// create PinReset credentials for activation
+			String generatedToken = generateResetToken();
+			int validityTimeInSeconds = 60 * 60 * 1/2; // 30 minutes
+			LocalDateTime now = LocalDateTime.now();
+			LocalDateTime expiryDate = now.plusSeconds(validityTimeInSeconds);
+			PinReset pinReset = new PinReset(generatedToken, expiryDate, userProfile);
+			pinResetRepo.save(pinReset);
+			
+			// send activation mail
+			try {
+				sendMailForAccountActivation(newUser, transferPin, httpServletRequest, generatedToken);
+			} catch(Exception ex) {
+				logger.error("there was an error: " + ex);
+			}
 		}
 		
 		return newUser;
+	}
+	
+	private void sendMailForAccountActivation(User newUser, String transferPin, HttpServletRequest httpServletRequest, String generatedToken) {
+		String appUrl = httpServletRequest.getScheme() + "://" + httpServletRequest.getServerName();
+		// Email message
+		SimpleMailMessage mailForActivation = new SimpleMailMessage();
+		mailForActivation.setFrom("smartpromise380@gmail.com");
+		mailForActivation.setTo(newUser.getEmail());
+		mailForActivation.setSubject("Password Reset Request");
+		String message = "Congratulations " + newUser.getFullname() + ",\n  Your registration was successful, your temporal transfer pin is " + transferPin 
+				+ ".\nYou need to change this pin so as to be activated, kindly click the link below so as to reset your"
+				+ "transfer pin to what you want.\n" + appUrl + ":3000/password-reset?token=" + generatedToken;
+		mailForActivation.setText(message);
+		emailService.sendEmail(mailForActivation);
 	}
 	
 
@@ -173,6 +208,16 @@ public class UserServiceImpl implements UserService{
 		}
 		
 		return accountNumber;
+	}
+	
+	// generate 4 digits transfer pin in String format
+	private String generateTransferPin() {
+			 int max = 1000;
+		     int min = 9999;
+		     
+		     // generates 9digits number prepending it with 0 to form 10 digits account number
+		     String transferPin = "" + (int)(Math.random() * (max - min + 1) + min);
+		     return transferPin;
 	}
 
 
