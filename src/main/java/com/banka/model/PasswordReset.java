@@ -29,6 +29,10 @@ public class PasswordReset {
 		
 		
 
+		public PasswordReset() {
+			
+		}
+
 		public PasswordReset(String resetToken, LocalDateTime expiryDate, User user) {
 		this.resetToken = resetToken;
 		this.expiryDate = expiryDate;

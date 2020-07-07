@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.mail.SimpleMailMessage;
 import com.banka.exceptions.CredentialAlreadyInUseException;
 import com.banka.exceptions.CredentialNotFoundException;
@@ -35,6 +35,7 @@ import com.banka.model.TransactionType;
 import com.banka.model.User;
 import com.banka.model.UserProfile;
 import com.banka.payloads.MakeDepositPayload;
+import com.banka.payloads.PasswordResetRequest;
 import com.banka.payloads.TransferRequestPayload;
 import com.banka.payloads.UserRegPayload;
 import com.banka.payloads.WithdrawalRequestPayload;
@@ -389,20 +390,32 @@ public class UserServiceImpl implements UserService{
 		
 	}
 
-
+    @Transactional
 	@Override
-	public void processForgotPassword(String email, HttpServletRequest httpServletRequest) {
-		User user = userRepo.getByEmail(email);
+	public void processForgotPassword(PasswordResetRequest passwordResetRequest, HttpServletRequest httpServletRequest) {
+		User user = userRepo.getByEmail(passwordResetRequest.getEmail());
+		
 		if(user == null) {
 			throw new InvalidCredentialException("sorry, it appears you do not have an account with us.");
 		}
+		
 		
 		String generatedToken = generateResetToken();
 		int validityTimeInSeconds = 60 * 60 * 1/2; // 30 minutes
 		LocalDateTime now = LocalDateTime.now();
 		LocalDateTime expiryDate = now.plusSeconds(validityTimeInSeconds);
 		
-		PasswordReset passwordReset = new PasswordReset(generatedToken, expiryDate, user);
+		PasswordReset passwordReset = passwordResetRepo.getPasswordResetByUserId(user.getId());
+		
+		// it's possible a user can send password reset and resend again without using the first one
+		// so this handles it
+		if(passwordReset == null) {
+			 passwordReset = new PasswordReset(generatedToken, expiryDate, user);
+		} else {
+			passwordReset.setResetToken(generatedToken);
+			passwordReset.setExpiryDate(expiryDate);
+		}
+		
 		passwordResetRepo.save(passwordReset);
 		
 		// something like this : https://mywebapp.com/reset?token=9e5bf4a8-66b8-433e-b91c-6382c1a25f00
@@ -410,25 +423,36 @@ public class UserServiceImpl implements UserService{
 		// Email message
 		SimpleMailMessage passwordResetEmail = new SimpleMailMessage();
 		passwordResetEmail.setFrom("smartpromise380@gmail.com");
-		passwordResetEmail.setTo(email);
+		passwordResetEmail.setTo(passwordResetRequest.getEmail());
 		passwordResetEmail.setSubject("Password Reset Request");
-		passwordResetEmail.setText("To reset your password, click the link below:\n" + appUrl + ":3000/reset?token=" + generatedToken);
+		String message = "Hi " + user.getFullname() + ",\n Someone requested to reset your password, if it wasn't you kindly ignore this"
+				+ " message, your account is safe with us.\n If it was you kindly click the link below:\n" + appUrl + ":3000/password-reset?token=" + generatedToken;
+		passwordResetEmail.setText(message);
 		emailService.sendEmail(passwordResetEmail);
+
 		
 	}
 	
 	public void resetPassword(String password, String token) {
+		
 		LocalDateTime timeOfReset = LocalDateTime.now();
 		PasswordReset passwordReset = passwordResetRepo.findByResetToken(token);
-		User user = passwordReset.getUser();
 		
-		if(passwordReset == null || user == null) {
+		if(passwordReset == null) {
 			throw new InvalidCredentialException("invalid or expired token");
 		}
 		
+		User user = passwordReset.getUser();
+		
+		if( user == null) {
+			throw new InvalidCredentialException("invalid user or expired token");
+		}
+		
+		
+		
 		LocalDateTime expiryDate = passwordReset.getExpiryDate();
 		if(timeOfReset.isAfter(expiryDate)) {
-			throw new InvalidCredentialException("expired token, please reset password again.");
+			throw new InvalidCredentialException("expired token, please reset password afresh.");
 		}
 		
 	

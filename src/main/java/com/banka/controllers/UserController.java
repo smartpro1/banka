@@ -6,6 +6,7 @@ import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -29,10 +30,12 @@ import com.banka.payloads.UserLoginPayload;
 import com.banka.payloads.UserRegPayload;
 import com.banka.payloads.WithdrawalRequestPayload;
 import com.banka.security.JwtTokenProvider;
+import com.banka.services.EmailService;
 import com.banka.services.FieldsValidationService;
 import com.banka.services.UserService;
 import com.banka.validators.AppValidator;
 import com.banka.validators.ChangePasswordValidator;
+
 
 import static com.banka.security.SecurityConstants.TOKEN_PREFIX;
 
@@ -62,6 +65,9 @@ public class UserController {
 	
 	@Autowired
 	private ChangePasswordValidator changePasswordValidator;
+	
+	@Autowired
+	private EmailService emailService;
 	
 //	@Autowired
 //	private SMSService smsService;
@@ -171,9 +177,8 @@ public class UserController {
 		
 		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
 		if(errorMap != null) return errorMap;
-		userService.processForgotPassword(passwordResetRequest.getEmail(), httpServletRequest);
+		userService.processForgotPassword(passwordResetRequest, httpServletRequest);
 		
-			
 		return new ResponseEntity<String>("reset password mail sent to " +passwordResetRequest.getEmail(), HttpStatus.OK);		
 		
 	}

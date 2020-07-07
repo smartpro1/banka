@@ -5,9 +5,11 @@ package com.banka.services;
 import java.math.BigDecimal;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 
 import com.banka.model.User;
 import com.banka.payloads.MakeDepositPayload;
+import com.banka.payloads.PasswordResetRequest;
 import com.banka.payloads.TransferRequestPayload;
 import com.banka.payloads.UserRegPayload;
 import com.banka.payloads.WithdrawalRequestPayload;
@@ -35,7 +37,7 @@ void makeDeposit(MakeDepositPayload makeDepositPayload, String string);
 
 BigDecimal getWithdrawalCharges();
 
-void processForgotPassword(String email, HttpServletRequest httpServletRequest);
+void processForgotPassword(PasswordResetRequest passwordResetRequest, HttpServletRequest httpServletRequest);
 
 void resetPassword(String password, String token);
 }
