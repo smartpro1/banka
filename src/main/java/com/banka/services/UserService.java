@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
 import com.banka.model.User;
+import com.banka.payloads.ChangePinRequest;
 import com.banka.payloads.MakeDepositPayload;
 import com.banka.payloads.PasswordResetRequest;
 import com.banka.payloads.TransferRequestPayload;
@@ -40,4 +41,6 @@ BigDecimal getWithdrawalCharges();
 void processForgotPassword(PasswordResetRequest passwordResetRequest, HttpServletRequest httpServletRequest);
 
 void resetPassword(String password, String token);
+
+void changePin(@Valid ChangePinRequest changePinRequest, String username);
 }

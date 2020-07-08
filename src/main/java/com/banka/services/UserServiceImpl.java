@@ -35,6 +35,7 @@ import com.banka.model.Transaction;
 import com.banka.model.TransactionType;
 import com.banka.model.User;
 import com.banka.model.UserProfile;
+import com.banka.payloads.ChangePinRequest;
 import com.banka.payloads.MakeDepositPayload;
 import com.banka.payloads.PasswordResetRequest;
 import com.banka.payloads.TransferRequestPayload;
@@ -509,6 +510,33 @@ public class UserServiceImpl implements UserService{
 	public String generateResetToken() {
 		String resetToken = UUID.randomUUID().toString();
 		return resetToken;		
+	}
+
+	@Override
+	public void changePin(@Valid ChangePinRequest changePinRequest, String username) {
+		User user = userRepo.getByUsername(username);
+		if(user == null) {
+			throw new InvalidCredentialException("invalid credential supplied"); 
+		}
+		
+		UserProfile userProfile = userProfileRepo.getUserProfileByUserId(user.getId());
+		if(userProfile == null) {
+			throw new InvalidCredentialException("invalid credential supplied"); 
+		}
+		
+		if(!passwordEncoder.matches(changePinRequest.getCurrentPin(), userProfile.getTransferPin())) {
+			throw new InvalidCredentialException("invalid credential supplied");
+		}
+		
+		userProfile.setTransferPin(passwordEncoder.encode(changePinRequest.getNewPin()));
+		userProfileRepo.save(userProfile);
+		
+		// We need to change isActive on user to String data type with three possible values, registered, registration confirmed, active
+//		if(user.getIsActive().equals("registration confirmed")) {
+//			user.setIsActive("active");
+//			userRepo.save(user);
+//		}
+		
 	}
 
 

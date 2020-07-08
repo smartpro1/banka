@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.banka.model.User;
 import com.banka.payloads.ChangePasswordRequest;
+import com.banka.payloads.ChangePinRequest;
 import com.banka.payloads.JwtLoginSuccessResponse;
 import com.banka.payloads.MakeDepositPayload;
 import com.banka.payloads.PasswordResetRequest;
@@ -35,7 +36,7 @@ import com.banka.services.FieldsValidationService;
 import com.banka.services.UserService;
 import com.banka.validators.AppValidator;
 import com.banka.validators.ChangePasswordValidator;
-
+import com.banka.validators.ChangePinValidator;
 
 import static com.banka.security.SecurityConstants.TOKEN_PREFIX;
 
@@ -67,7 +68,10 @@ public class UserController {
 	private ChangePasswordValidator changePasswordValidator;
 	
 	@Autowired
-	private EmailService emailService;
+	private ChangePinValidator changePinValidator;
+	
+//	@Autowired
+//	private EmailService emailService;
 	
 //	@Autowired
 //	private SMSService smsService;
@@ -100,6 +104,46 @@ public class UserController {
 		String jwt = TOKEN_PREFIX + jwtTokenProvider.generateJwtToken(authentication);
 		
 		return ResponseEntity.ok(new JwtLoginSuccessResponse(true, jwt));
+	}
+	
+	
+	@PostMapping("/forgot-password")
+	public ResponseEntity<?> forgotPassword(@Valid @RequestBody PasswordResetRequest passwordResetRequest, BindingResult result,  
+			HttpServletRequest httpServletRequest){
+		
+		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
+		if(errorMap != null) return errorMap;
+		userService.processForgotPassword(passwordResetRequest, httpServletRequest);
+		
+		return new ResponseEntity<String>("reset password mail sent to " +passwordResetRequest.getEmail(), HttpStatus.OK);		
+		
+	}
+	
+	
+	@PostMapping("/reset-password")
+	public ResponseEntity<?> resetPassword(@Valid @RequestBody ChangePasswordRequest changePasswordRequest, BindingResult result){
+		// compare password
+		changePasswordValidator.validate(changePasswordRequest, result);
+		
+		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
+		if(errorMap != null) return errorMap;
+        userService.resetPassword(changePasswordRequest.getPassword(), changePasswordRequest.getToken());
+        
+        return new ResponseEntity<String>("password reset successful", HttpStatus.OK);
+	}
+	
+	
+	@PostMapping("/change-pin")
+	public ResponseEntity<?> changePin(@Valid @RequestBody ChangePinRequest changePinRequest , BindingResult result, Principal principal) {
+		// compare newPin with confirmNewPin
+		changePinValidator.validate(changePinRequest, result);
+		
+		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
+		if(errorMap != null) return errorMap;
+		
+		userService.changePin(changePinRequest, principal.getName());
+		
+		return new ResponseEntity<String>("change pin successful", HttpStatus.OK);
 	}
 	
 	@PostMapping("/transfer-funds")
@@ -169,47 +213,7 @@ public class UserController {
 		return new ResponseEntity<String>("Successful", HttpStatus.OK);
 	}
 	
-	
-	
-	@PostMapping("/forgot-password")
-	public ResponseEntity<?> forgotPassword(@Valid @RequestBody PasswordResetRequest passwordResetRequest, BindingResult result,  
-			HttpServletRequest httpServletRequest){
-		
-		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
-		if(errorMap != null) return errorMap;
-		userService.processForgotPassword(passwordResetRequest, httpServletRequest);
-		
-		return new ResponseEntity<String>("reset password mail sent to " +passwordResetRequest.getEmail(), HttpStatus.OK);		
-		
-	}
-	
-	
-	@PostMapping("/reset-password")
-	public ResponseEntity<?> resetPassword(@Valid @RequestBody ChangePasswordRequest changePasswordRequest, BindingResult result){
-		// compare password
-		changePasswordValidator.validate(changePasswordRequest, result);
-		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
-		if(errorMap != null) return errorMap;
-        userService.resetPassword(changePasswordRequest.getPassword(), changePasswordRequest.getToken());
-        
-        return new ResponseEntity<String>("password reset successful", HttpStatus.OK);
-	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	@PostMapping("/change-pin")
-	public String changePin() {
-		return null;
-	}
+
 	
 
 	
