@@ -72,7 +72,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     	    		  ).permitAll()
 //    	      .antMatchers(USER_URLS).permitAll()
     	    .antMatchers("/api/v1/users/signup","/api/v1/users/login",
-    	    		      "/api/v1/users/forgot-password", "/api/v1/users/reset-password").permitAll()
+    	    		      "/api/v1/users/forgot-password", "/api/v1/users/reset-password", "/api/v1/users/confirm-registration").permitAll()
     	       .anyRequest()
     	       .authenticated();
     	

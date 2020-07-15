@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 //import org.springframework.web.bind.annotation.RestController;
 
 import com.banka.model.User;
+import com.banka.payloads.AccountInfoResponse;
 import com.banka.payloads.ChangePasswordRequest;
 import com.banka.payloads.ChangePinRequest;
 import com.banka.payloads.JwtLoginSuccessResponse;
@@ -90,6 +91,13 @@ public class UserController {
 		return new ResponseEntity<User>(newUser, HttpStatus.CREATED);
 	}
 	
+	@PostMapping("/confirm-registration")
+	public ResponseEntity<String> confirmRegistration(@RequestParam("token") String confirmationToken){
+		String message = userService.confirmRegistration(confirmationToken);
+		if(message == null) return new ResponseEntity<String>(message, HttpStatus.NOT_FOUND);
+		return new ResponseEntity<String>(message, HttpStatus.OK);
+	}
+	
 	@PostMapping("/login")
 	public ResponseEntity<?> loginUser(@Valid @RequestBody UserLoginPayload UserLoginRequest, BindingResult result) {
 		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
@@ -145,6 +153,15 @@ public class UserController {
 		
 		return new ResponseEntity<String>("change pin successful", HttpStatus.OK);
 	}
+	
+	@GetMapping("/get-account-info")
+	public ResponseEntity<?> getAccountInfo(Principal principal){
+		AccountInfoResponse acctDetails =  userService.getAccountInfo(principal.getName());
+		
+		return new ResponseEntity<AccountInfoResponse>(acctDetails, HttpStatus.OK);
+	}
+	
+	
 	
 	@PostMapping("/transfer-funds")
 	public ResponseEntity<?> transferFunds(@Valid @RequestBody TransferRequestPayload transferRequestPayload,

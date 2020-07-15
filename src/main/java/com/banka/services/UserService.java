@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
 import com.banka.model.User;
+import com.banka.payloads.AccountInfoResponse;
 import com.banka.payloads.ChangePinRequest;
 import com.banka.payloads.MakeDepositPayload;
 import com.banka.payloads.PasswordResetRequest;
@@ -43,4 +44,8 @@ void processForgotPassword(PasswordResetRequest passwordResetRequest, HttpServle
 void resetPassword(String password, String token);
 
 void changePin(@Valid ChangePinRequest changePinRequest, String username);
+
+String confirmRegistration(String confirmationToken);
+
+AccountInfoResponse getAccountInfo(String username);
 }

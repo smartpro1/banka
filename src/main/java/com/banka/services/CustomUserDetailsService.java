@@ -23,7 +23,13 @@ public class CustomUserDetailsService implements UserDetailsService{
 	@Transactional
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		User user = userRepo.getByUsername(username);
+		
 		if(user == null) throw new CredentialNotFoundException("invalid username or password");
+		
+		if(user.getIsActive() == "registered") {
+			throw new  CredentialNotFoundException("Your account is not yet activated. Click on the link that was sent to your"
+					+ "email when you signed up to activate account.");
+		}
 		
 		return CustomUserDetails.grantedUser(user);
 	}

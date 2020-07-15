@@ -61,5 +61,11 @@ public class GlobalResponseEntityExceptionHandler extends ResponseEntityExceptio
 	    return new ResponseEntity(exceptionResponse, HttpStatus.BAD_REQUEST);
 	}
 	
+	@ExceptionHandler
+	public final ResponseEntity<Object> handleEmailSendingException(EmailSendingException ex, WebRequest req){
+		EmailSendingExceptionResponse exceptionResponse = new EmailSendingExceptionResponse(ex.getMessage());
+	    return new ResponseEntity(exceptionResponse, HttpStatus.BAD_REQUEST);
+	}
+	
 	
 }

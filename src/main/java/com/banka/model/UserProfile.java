@@ -9,12 +9,18 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 @Entity
 public class UserProfile {
 	
+	@Override
+	public String toString() {
+		return "UserProfile [id=" + id + ", phoneNumber=" + phoneNumber + ", accountNumber=" + accountNumber
+				+ ", accountBalance=" + accountBalance + ", transferPin=" + transferPin + ", user=" + user + "]";
+	}
+
 	@Id
 	@GeneratedValue(strategy= GenerationType.IDENTITY)
 	private Long id;
 	private String phoneNumber;
 	private String accountNumber;
-	private BigDecimal accountBalance = new BigDecimal("0.00");
+	private BigDecimal accountBalance = new BigDecimal("25000.00");
 	private String transferPin;
 	
 	// oneToOne with User

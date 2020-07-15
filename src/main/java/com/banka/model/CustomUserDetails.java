@@ -16,7 +16,7 @@ public class CustomUserDetails implements UserDetails{
 	private String email;
 	private String username;
 	private String password;
-	private byte isActive = 0;
+	private String isActive = "registered";
 	private Collection<? extends GrantedAuthority> authorities;
 	
 	public CustomUserDetails(Long id, String fullname, String sex, String email, String username,
@@ -69,7 +69,7 @@ public class CustomUserDetails implements UserDetails{
 
 	
 
-	public byte getIsActive() {
+	public String getIsActive() {
 		return isActive;
 	}
 

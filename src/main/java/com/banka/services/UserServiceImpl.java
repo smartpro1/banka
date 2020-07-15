@@ -21,6 +21,7 @@ import org.springframework.mail.SimpleMailMessage;
 import com.banka.exceptions.CredentialAlreadyInUseException;
 import com.banka.exceptions.CredentialNotFoundException;
 import com.banka.exceptions.EmailAlreadyInUseException;
+import com.banka.exceptions.EmailSendingException;
 import com.banka.exceptions.InsufficientFundException;
 import com.banka.exceptions.InvalidCredentialException;
 import com.banka.exceptions.InvalidPhoneNumberException;
@@ -35,6 +36,7 @@ import com.banka.model.Transaction;
 import com.banka.model.TransactionType;
 import com.banka.model.User;
 import com.banka.model.UserProfile;
+import com.banka.payloads.AccountInfoResponse;
 import com.banka.payloads.ChangePinRequest;
 import com.banka.payloads.MakeDepositPayload;
 import com.banka.payloads.PasswordResetRequest;
@@ -52,6 +54,7 @@ import com.banka.repositories.UserRepository;
 
 
 @Service
+@Transactional
 public class UserServiceImpl implements UserService{
 
 	@Autowired
@@ -131,11 +134,8 @@ public class UserServiceImpl implements UserService{
 			pinResetRepo.save(pinReset);
 			
 			// send activation mail
-			try {
 				sendMailForAccountActivation(newUser, transferPin, httpServletRequest, generatedToken);
-			} catch(Exception ex) {
-				logger.error("there was an error: " + ex);
-			}
+		
 		}
 		
 		return newUser;
@@ -144,15 +144,24 @@ public class UserServiceImpl implements UserService{
 	private void sendMailForAccountActivation(User newUser, String transferPin, HttpServletRequest httpServletRequest, String generatedToken) {
 		String appUrl = httpServletRequest.getScheme() + "://" + httpServletRequest.getServerName();
 		// Email message
+		try {
 		SimpleMailMessage mailForActivation = new SimpleMailMessage();
 		mailForActivation.setFrom("smartpromise380@gmail.com");
 		mailForActivation.setTo(newUser.getEmail());
-		mailForActivation.setSubject("Password Reset Request");
-		String message = "Congratulations " + newUser.getFullname() + ",\n  Your registration was successful, your temporal transfer pin is " + transferPin 
-				+ ".\nYou need to change this pin so as to be activated, kindly click the link below so as to reset your"
-				+ "transfer pin to what you want.\n" + appUrl + ":3000/password-reset?token=" + generatedToken;
+		mailForActivation.setSubject("Registration Confirmation Request");
+		String message = "Congratulations " + newUser.getFullname() + ",\nYour registration was successful, your temporal transfer pin is * " 
+		+ transferPin + " * (four digits only without the asterisks)\n You would need to change this pin later so as to be fully activated, but before then we would like you to"
+				+ " confirm your registration by clicking the link below:" +
+				"\n" + appUrl + ":3000/confirm-registration?token=" + generatedToken;
 		mailForActivation.setText(message);
 		emailService.sendEmail(mailForActivation);
+		} catch(Exception ex) {
+			logger.error("there was an error: " + ex);
+			ex.printStackTrace();
+			throw new EmailSendingException("Ops! It's not you it's us! An error occurred when sending confirmation mail to " +newUser.getEmail() +
+					", it's either you supplied a non-functional mail or the server is down. Please try "
+					+ "again later.");	
+		}
 	}
 	
 
@@ -239,6 +248,10 @@ public class UserServiceImpl implements UserService{
 			throw new InvalidCredentialException("invalid user");
 		}
 		
+		if(!sender.getIsActive().equals("active")) {
+			throw new InvalidCredentialException("You need to change the pin that was generated for you before you can make transactions.");
+		}
+		
 		BigDecimal transferCharges = getTransferCharges(); 
 		UserProfile senderUserProfile = userProfileRepo.getUserProfileByUserId(sender.getId());
 		BigDecimal senderAccountBalance = senderUserProfile.getAccountBalance();
@@ -301,7 +314,7 @@ public class UserServiceImpl implements UserService{
 	public User deactivateUser(String username) {
 		User user = userRepo.getByUsername(username);
 		if(user == null) throw new CredentialNotFoundException("invalid user");
-		user.setIsActive((byte) 0);
+		user.setIsActive("deactivated");
 		userRepo.save(user);
 		return user;
 	}
@@ -312,7 +325,7 @@ public class UserServiceImpl implements UserService{
 	public User activateUser(String username) {
 		User user = userRepo.getByUsername(username);
 		if(user == null) throw new CredentialNotFoundException("invalid user");
-		user.setIsActive((byte) 1);
+		user.setIsActive("active");
 		userRepo.save(user);
 		return user;
 	}
@@ -321,7 +334,7 @@ public class UserServiceImpl implements UserService{
 	public User deactivateCashier(String username) {
 		User user = userRepo.getByUsername(username);
 		if(user == null) throw new CredentialNotFoundException("invalid cashier");
-		user.setIsActive((byte) 0);
+		user.setIsActive("deactivated");
 		userRepo.save(user);
 		return user;
 	}
@@ -331,7 +344,7 @@ public class UserServiceImpl implements UserService{
 	public User activateCashier(String username) {
 		User user = userRepo.getByUsername(username);
 		if(user == null) throw new CredentialNotFoundException("invalid cashier");
-		user.setIsActive((byte) 1);
+		user.setIsActive("active");
 		userRepo.save(user);
 		return user;
 	}
@@ -436,7 +449,7 @@ public class UserServiceImpl implements UserService{
 		
 	}
 
-    @Transactional
+    
 	@Override
 	public void processForgotPassword(PasswordResetRequest passwordResetRequest, HttpServletRequest httpServletRequest) {
 		User user = userRepo.getByEmail(passwordResetRequest.getEmail());
@@ -531,12 +544,39 @@ public class UserServiceImpl implements UserService{
 		userProfile.setTransferPin(passwordEncoder.encode(changePinRequest.getNewPin()));
 		userProfileRepo.save(userProfile);
 		
-		// We need to change isActive on user to String data type with three possible values, registered, registration confirmed, active
-//		if(user.getIsActive().equals("registration confirmed")) {
-//			user.setIsActive("active");
-//			userRepo.save(user);
-//		}
+		if(user.getIsActive().equals("registration confirmed")) {
+			user.setIsActive("active");
+			userRepo.save(user);
+		}
 		
+	}
+
+	@Override
+	public String confirmRegistration(String confirmationToken) {
+		if(confirmationToken == null) {
+			return "invalid token or something went wrong, your registration is not confirmed!";
+		}
+		PinReset pinReset = pinResetRepo.getByResetToken(confirmationToken);
+		if(pinReset == null) {
+			return "invalid token or something went wrong, your registration is not confirmed!";
+		}
+		
+		UserProfile userProfile = pinReset.getUserProfile();
+		User user = userProfile.getUser();
+		user.setIsActive("registration-confirmed");
+		userRepo.save(user);
+				
+		return "registration successful";
+	}
+
+	@Override
+	public AccountInfoResponse getAccountInfo(String username) {
+		User user = userRepo.getByUsername(username);
+		UserProfile userProfile = userProfileRepo.getUserProfileByUserId(user.getId());
+		
+		AccountInfoResponse accountInfo = new AccountInfoResponse(userProfile.getAccountNumber(), userProfile.getAccountBalance());
+	
+		return accountInfo;
 	}
 
 

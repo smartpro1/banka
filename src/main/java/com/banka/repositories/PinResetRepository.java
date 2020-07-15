@@ -10,8 +10,10 @@ import com.banka.model.PinReset;
 
 @Repository
 public interface PinResetRepository  extends JpaRepository<PinReset, Long>{
-	PasswordReset findByResetToken(String token);
+	PinReset findByResetToken(String token);
 	
 	@Query(value="SELECT * FROM pin_reset WHERE user_profile_id =?1", nativeQuery=true)
     PinReset getPinResetByUserProfileId(Long user_Profile_id);
+
+	PinReset getByResetToken(String confirmationToken);
 }

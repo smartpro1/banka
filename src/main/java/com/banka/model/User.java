@@ -22,7 +22,7 @@ public class User {
 	@Column(updatable = false, unique = true)
 	private String username;
 	private String password;
-	private byte isActive = 0;
+	private String isActive = "registered";
 
 	
 	@Column(updatable = false)
@@ -41,9 +41,7 @@ public class User {
 	@OneToMany(cascade = CascadeType.ALL, mappedBy="user")
 	private List<Transaction> transactions = new ArrayList<>();
 	
-//	@OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy="user")
-//	@JsonIgnore
-//	private PasswordReset passwordReset;
+
 	
 	public User() {
 
@@ -165,12 +163,12 @@ public class User {
 	
 
 
-	public byte getIsActive() {
+	public String getIsActive() {
 		return isActive;
 	}
 
 
-	public void setIsActive(byte isActive) {
+	public void setIsActive(String isActive) {
 		this.isActive = isActive;
 	}
 
@@ -183,6 +181,14 @@ public class User {
 	@PreUpdate
 	protected void onUpdate() {
 		this.updated_At = LocalDateTime.now();
+	}
+
+
+	@Override
+	public String toString() {
+		return "User [id=" + id + ", fullname=" + fullname + ", sex=" + sex + ", email=" + email + ", username="
+				+ username + ", password=" + password + ", isActive=" + isActive + ", created_At=" + created_At
+				+ ", updated_At=" + updated_At + ", roles=" + roles + ", transactions=" + transactions + "]";
 	}
 
 
