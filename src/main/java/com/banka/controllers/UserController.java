@@ -20,13 +20,16 @@ import org.springframework.web.bind.annotation.*;
 //import org.springframework.web.bind.annotation.RequestMapping;
 //import org.springframework.web.bind.annotation.RestController;
 
+import com.banka.model.Transaction;
 import com.banka.model.User;
+import com.banka.model.UserProfile;
 import com.banka.payloads.AccountInfoResponse;
 import com.banka.payloads.ChangePasswordRequest;
 import com.banka.payloads.ChangePinRequest;
 import com.banka.payloads.JwtLoginSuccessResponse;
 import com.banka.payloads.MakeDepositPayload;
 import com.banka.payloads.PasswordResetRequest;
+import com.banka.payloads.RegistrationSuccessResponse;
 import com.banka.payloads.TransferRequestPayload;
 import com.banka.payloads.UserLoginPayload;
 import com.banka.payloads.UserRegPayload;
@@ -40,9 +43,11 @@ import com.banka.validators.ChangePasswordValidator;
 import com.banka.validators.ChangePinValidator;
 
 import static com.banka.security.SecurityConstants.TOKEN_PREFIX;
+import static com.banka.utils.Constants.*;
 
 import java.math.BigDecimal;
 import java.security.Principal;
+import java.util.List;
 
 
 @RestController
@@ -71,13 +76,7 @@ public class UserController {
 	@Autowired
 	private ChangePinValidator changePinValidator;
 	
-//	@Autowired
-//	private EmailService emailService;
-	
-//	@Autowired
-//	private SMSService smsService;
-	
-	
+
 	@PostMapping("/signup")
 	public ResponseEntity<?> registerUser(@Valid @RequestBody UserRegPayload userRegPayload, BindingResult result, HttpServletRequest httpServletRequest) {
 		// compare passwords
@@ -92,10 +91,14 @@ public class UserController {
 	}
 	
 	@PostMapping("/confirm-registration")
-	public ResponseEntity<String> confirmRegistration(@RequestParam("token") String confirmationToken){
-		String message = userService.confirmRegistration(confirmationToken);
-		if(message == null) return new ResponseEntity<String>(message, HttpStatus.NOT_FOUND);
-		return new ResponseEntity<String>(message, HttpStatus.OK);
+	public ResponseEntity<RegistrationSuccessResponse> confirmRegistration(@RequestParam("token") String confirmationToken){
+		RegistrationSuccessResponse message = userService.confirmRegistration(confirmationToken);
+		
+		if(message == null) {
+			return new ResponseEntity<RegistrationSuccessResponse>(message, HttpStatus.NOT_FOUND);
+		}
+		
+		return new ResponseEntity<RegistrationSuccessResponse>(message, HttpStatus.OK);
 	}
 	
 	@PostMapping("/login")
@@ -143,6 +146,7 @@ public class UserController {
 	
 	@PostMapping("/change-pin")
 	public ResponseEntity<?> changePin(@Valid @RequestBody ChangePinRequest changePinRequest , BindingResult result, Principal principal) {
+		System.out.println(changePinRequest);
 		// compare newPin with confirmNewPin
 		changePinValidator.validate(changePinRequest, result);
 		
@@ -161,13 +165,22 @@ public class UserController {
 		return new ResponseEntity<AccountInfoResponse>(acctDetails, HttpStatus.OK);
 	}
 	
+	@GetMapping("/get-dummy-accounts")
+	public ResponseEntity<List<UserProfile>> getDummyAccounts(){
+		List<UserProfile> userProfiles = userService.getDummyAccounts();
+		
+		return new ResponseEntity<List<UserProfile>>(userProfiles , HttpStatus.OK);
+		
+	}
 	
 	
 	@PostMapping("/transfer-funds")
-	public ResponseEntity<?> transferFunds(@Valid @RequestBody TransferRequestPayload transferRequestPayload,
+	public ResponseEntity<?> transferFunds(@RequestBody TransferRequestPayload transferRequestPayload,
 			                          BindingResult result, Principal principal) {
 		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
-		if(errorMap != null) return errorMap;
+		if(errorMap != null) {
+			return errorMap;
+		}
 		
 		 userService.makeTransfer(transferRequestPayload, principal.getName());
 		return new ResponseEntity<String>("Successful", HttpStatus.OK);
@@ -175,7 +188,7 @@ public class UserController {
 	
 	@GetMapping("/transfer-charges")
 	public BigDecimal getTransferCharge() {
-		return userService.getTransferCharges();
+		return TRANSFER_CHARGE;
 	}
 	
 	
@@ -216,7 +229,9 @@ public class UserController {
 	public ResponseEntity<?> makeWithdrawal(@Valid @RequestBody WithdrawalRequestPayload withdrawalRequestPayload,
 			                     BindingResult result, Principal principal){
 		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
-		if(errorMap != null) return errorMap;
+		if(errorMap != null) {
+			return errorMap;
+		}
 		userService.makeWithdrawal(withdrawalRequestPayload, principal.getName());
 		return new ResponseEntity<String>("Successful", HttpStatus.OK);
 	}
@@ -225,13 +240,19 @@ public class UserController {
 	public ResponseEntity<?> makeDeposit(@Valid @RequestBody MakeDepositPayload makeDepositPayload,
 			                     BindingResult result, Principal principal){
 		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
-		if(errorMap != null) return errorMap;
+		if(errorMap != null) {
+			return errorMap;
+		}
 		userService.makeDeposit(makeDepositPayload, principal.getName());
 		return new ResponseEntity<String>("Successful", HttpStatus.OK);
 	}
 	
 
-	
+	@GetMapping("/transaction-details")
+	public ResponseEntity<List<Transaction>> getTransactionDetails(String transactionId) {
+		List<Transaction> transactions = userService.getTransactionDetails(transactionId);
+		return new ResponseEntity<List<Transaction>>(transactions, HttpStatus.OK);
+	}
 
 	
 }

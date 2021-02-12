@@ -8,12 +8,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 public class UserProfile {
-	
-	@Override
-	public String toString() {
-		return "UserProfile [id=" + id + ", phoneNumber=" + phoneNumber + ", accountNumber=" + accountNumber
-				+ ", accountBalance=" + accountBalance + ", transferPin=" + transferPin + ", user=" + user + "]";
-	}
 
 	@Id
 	@GeneratedValue(strategy= GenerationType.IDENTITY)
@@ -94,6 +88,10 @@ public class UserProfile {
 	}
 	
 	
-		
+	@Override
+	public String toString() {
+		return "UserProfile [id=" + id + ", phoneNumber=" + phoneNumber + ", accountNumber=" + accountNumber
+				+ ", accountBalance=" + accountBalance + ", transferPin=" + transferPin + ", user=" + user + "]";
+	}	
 
 }

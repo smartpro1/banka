@@ -2,8 +2,10 @@ package com.banka.services;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
@@ -40,7 +42,9 @@ import com.banka.payloads.AccountInfoResponse;
 import com.banka.payloads.ChangePinRequest;
 import com.banka.payloads.MakeDepositPayload;
 import com.banka.payloads.PasswordResetRequest;
+import com.banka.payloads.RegistrationSuccessResponse;
 import com.banka.payloads.TransferRequestPayload;
+import com.banka.payloads.TransferSuccessResponse;
 import com.banka.payloads.UserRegPayload;
 import com.banka.payloads.WithdrawalRequestPayload;
 import com.banka.repositories.AdminProfileRepository;
@@ -50,8 +54,9 @@ import com.banka.repositories.RoleRepository;
 import com.banka.repositories.TransactionRepository;
 import com.banka.repositories.UserProfileRepository;
 import com.banka.repositories.UserRepository;
-
-
+import static com.banka.utils.Constants.*;
+import static com.banka.model.UserStatus.*;
+import static com.banka.utils.GenTransactionId.*;
 
 @Service
 @Transactional
@@ -141,6 +146,145 @@ public class UserServiceImpl implements UserService{
 		return newUser;
 	}
 	
+	
+	@Override
+	public RegistrationSuccessResponse confirmRegistration(String confirmationToken) {
+		if(confirmationToken == null) {
+			throw new InvalidCredentialException("invalid token or something went wrong, your registration is not confirmed!");
+		}
+		PinReset pinReset = pinResetRepo.getByResetToken(confirmationToken);
+		if(pinReset == null) {
+			throw new InvalidCredentialException("invalid token or something went wrong, your registration is not confirmed!");
+		}
+		
+		UserProfile userProfile = pinReset.getUserProfile();
+		User user = userProfile.getUser();
+		user.setIsActive(DEFAULT_PIN_NOT_CHANGED.name());
+		userRepo.save(user);
+		RegistrationSuccessResponse regSuccessResponse = new RegistrationSuccessResponse(user.getFullname());
+				
+		return regSuccessResponse;
+	}
+	
+	@Override
+	public void changePin(@Valid ChangePinRequest changePinRequest, String username) {
+		User user = userRepo.getByUsername(username);
+		if(user == null) {
+			throw new InvalidCredentialException("invalid credential supplied"); 
+		}
+		
+		UserProfile userProfile = userProfileRepo.getUserProfileByUserId(user.getId());
+		if(userProfile == null) {
+			throw new InvalidCredentialException("invalid credential supplied"); 
+		}
+		
+		if(!passwordEncoder.matches(changePinRequest.getCurrentPin(), userProfile.getTransferPin())) {
+			throw new InvalidCredentialException("invalid pin");
+		}
+		
+		// pin must be 4 to 8 digits
+		if (!changePinRequest.getConfirmNewPin().matches("\\d{4,8}")) {
+			throw new InvalidCredentialException("new pin must be 4 to 8 digits long");
+		}
+		
+		
+		userProfile.setTransferPin(passwordEncoder.encode(changePinRequest.getNewPin()));
+		userProfileRepo.save(userProfile);
+		
+		if(user.getIsActive().equals(DEFAULT_PIN_NOT_CHANGED.name())) {
+			user.setIsActive(ACTIVE.name());
+			userRepo.save(user);
+		}
+		
+	}
+	
+	@Override
+	public TransferSuccessResponse makeTransfer(TransferRequestPayload transferRequestPayload, String name) {
+		verifyBeneficiaryAccountNumber(transferRequestPayload.getBenfAcctNum());
+		String transferAmount =  verifyTransferFund(transferRequestPayload.getAmount());
+		transferRequestPayload.setAmount(transferAmount);
+		
+		UserProfile beneficiary = userProfileRepo.getByAccountNumber(transferRequestPayload.getBenfAcctNum());
+		User sender = userRepo.getByUsername(name);
+		
+		if(beneficiary == null) {
+			throw new InvalidCredentialException("beneficiary's account number does not exist");
+		}
+		
+		if(sender == null) {
+			throw new InvalidCredentialException("invalid user");
+		}
+		
+		// check here it shouldn't be active 
+		if(!sender.getIsActive().equalsIgnoreCase(ACTIVE.name())) {
+			informUser(sender.getIsActive());
+		}
+		
+		// compare pins -- to be moved
+		UserProfile userProfile = userProfileRepo.getById(sender.getId());
+		if(!passwordEncoder.matches(transferRequestPayload.getPin(), userProfile.getTransferPin())) {
+			throw new InvalidCredentialException("invalid pin supplied");
+		}
+
+		
+		BigDecimal transferCharges = TRANSFER_CHARGE; 
+		UserProfile senderUserProfile = userProfileRepo.getUserProfileByUserId(sender.getId());
+		BigDecimal senderAccountBalance = senderUserProfile.getAccountBalance();
+		BigDecimal amountToTransfer = new BigDecimal(transferRequestPayload.getAmount());
+		BigDecimal totalDebit = transferCharges.add(amountToTransfer);
+		
+		if(senderAccountBalance.compareTo(totalDebit) < 0) {
+			 throw new InsufficientFundException("insufficient fund");
+		}
+		
+		senderAccountBalance = senderAccountBalance.subtract(totalDebit);
+		senderUserProfile.setAccountBalance(senderAccountBalance);
+		BigDecimal beneficiaryNewAcctBal = beneficiary.getAccountBalance().add(amountToTransfer);
+		beneficiary.setAccountBalance(beneficiaryNewAcctBal);
+		
+//		try {
+//		 send twilio notification to sender
+//		smsService.sendSMS(sender, "debit", amountToTransfer, beneficiary.getAccountNumber());
+		//smsService.sendSMS(senderUserProfile, "debit", amountToTransfer, beneficiary.getAccountNumber());
+		
+//		// send twilio notification to beneficiary
+		//smsService.sendSMS(beneficiary, "credit", amountToTransfer, senderUserProfile.getAccountNumber());
+//		} catch(Exception ex) {
+//			logger.error("error : " + ex);
+//		}
+//		userRepo.save(sender);
+		userProfileRepo.save(senderUserProfile);
+		userProfileRepo.save(beneficiary);
+		
+		
+		// create transactions for sender and beneficiary
+		String transactionId = generateTransactionId();
+		String description = transferRequestPayload.getDescription();
+		Transaction senderTransaction = new Transaction(TransactionType.DEBIT.name(), totalDebit, beneficiary.getAccountNumber(), 
+				                                          description,null, sender, transactionId);
+		List<Transaction> senderTransactions = sender.getTransactions();
+		senderTransactions.add(senderTransaction);
+		sender.setTransactions(senderTransactions);
+		userRepo.save(sender);
+		
+		sender.setTransactions(senderTransactions);
+		Transaction beneficiaryTransaction = new Transaction(TransactionType.CREDIT.name(), amountToTransfer, senderUserProfile.getAccountNumber(),
+				                                description, null, beneficiary.getUser(), transactionId);
+		
+		User beneficiaryUser = beneficiary.getUser();
+		List<Transaction> beneficiaryUserTransactions = beneficiaryUser.getTransactions();
+		beneficiaryUserTransactions.add(beneficiaryTransaction);
+		userRepo.save(beneficiaryUser);
+		
+		// create transfer response object and return it.
+		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm a");
+		String transactionTime = LocalDateTime.now().format(dtf);
+		TransferSuccessResponse transferResponse = new TransferSuccessResponse(
+				         sender.getFullname(), beneficiaryUser.getFullname(), amountToTransfer.toString(), transactionId, transactionTime, description);
+		
+		return transferResponse;
+	}
+	
 	private void sendMailForAccountActivation(User newUser, String transferPin, HttpServletRequest httpServletRequest, String generatedToken) {
 		String appUrl = httpServletRequest.getScheme() + "://" + httpServletRequest.getServerName();
 		// Email message
@@ -178,7 +322,7 @@ public class UserServiceImpl implements UserService{
 	}
 	
 	private void verifyPhoneNumber(String phoneNumber) {
-		if(!phoneNumber.startsWith("0") || phoneNumber.length() != 11 || !phoneNumber.matches("[0-9]+")) {
+		if(!phoneNumber.matches("0[789]\\d{9}")) {
 			throw new InvalidPhoneNumberException("invalid phone number");
 		}
 		
@@ -231,82 +375,28 @@ public class UserServiceImpl implements UserService{
 	}
 
 
-	@Override
-	public void makeTransfer(TransferRequestPayload transferRequestPayload, String name) {
-		
-		verifyBeneficiaryAccountNumber(transferRequestPayload.getAccountNumber());
-		verifyTransferFund(transferRequestPayload.getTransferAmount());
-		
-		UserProfile beneficiary = userProfileRepo.getByAccountNumber(transferRequestPayload.getAccountNumber());
-		User sender = userRepo.getByUsername(name);
-		
-		if(beneficiary == null) {
-			throw new InvalidCredentialException("beneficiary's account number does not exist");
+	
+	
+	private void informUser(String userStatus) {
+		if (userStatus.equalsIgnoreCase(REGISTRATION_NOT_CONFIRMED.name())) {
+			throw new InvalidCredentialException("Your registration is not confirmed yet, go to your mail and click"
+					+ " on the link that was sent to you when you registered to confirm registration.");
+		} else if (userStatus.equalsIgnoreCase(DEFAULT_PIN_NOT_CHANGED.name())) {
+			throw new InvalidCredentialException("You have not changed your default pin, kindly make use of the "
+					+ "change pin link to do so in order to be eligible to make transfer.");
+		} else {
+			throw new InvalidCredentialException("Your account seems to have been frozen, suspended, deactivated or blocked,"
+					+ " kindly contact support for more info .");
 		}
-		
-		if(sender == null) {
-			throw new InvalidCredentialException("invalid user");
-		}
-		
-		if(!sender.getIsActive().equals("active")) {
-			throw new InvalidCredentialException("You need to change the pin that was generated for you before you can make transactions.");
-		}
-		
-		BigDecimal transferCharges = getTransferCharges(); 
-		UserProfile senderUserProfile = userProfileRepo.getUserProfileByUserId(sender.getId());
-		BigDecimal senderAccountBalance = senderUserProfile.getAccountBalance();
-		BigDecimal amountToTransfer = new BigDecimal(transferRequestPayload.getTransferAmount());
-		BigDecimal totalDebit = transferCharges.add(amountToTransfer);
-		
-		if(senderAccountBalance.compareTo(totalDebit) < 0) {
-			 throw new InsufficientFundException("insufficient fund");
-		}
-		
-		senderAccountBalance = senderAccountBalance.subtract(totalDebit);
-		senderUserProfile.setAccountBalance(senderAccountBalance);
-		BigDecimal beneficiaryNewAcctBal = beneficiary.getAccountBalance().add(amountToTransfer);
-		beneficiary.setAccountBalance(beneficiaryNewAcctBal);
-		
-//		try {
-//		 send twilio notification to sender
-//		smsService.sendSMS(sender, "debit", amountToTransfer, beneficiary.getAccountNumber());
-		//smsService.sendSMS(senderUserProfile, "debit", amountToTransfer, beneficiary.getAccountNumber());
-		
-//		// send twilio notification to beneficiary
-		//smsService.sendSMS(beneficiary, "credit", amountToTransfer, senderUserProfile.getAccountNumber());
-//		} catch(Exception ex) {
-//			logger.error("error : " + ex);
-//		}
-//		userRepo.save(sender);
-		userProfileRepo.save(senderUserProfile);
-		userProfileRepo.save(beneficiary);
-		
-		
-		// create transactions for sender and beneficiary
-		
-		Transaction senderTransaction = new Transaction(TransactionType.DEBIT, amountToTransfer, beneficiary.getAccountNumber(), 
-				                                          transferRequestPayload.getDescription(),null, sender);
-		List<Transaction> senderTransactions = sender.getTransactions();
-		senderTransactions.add(senderTransaction);
-		sender.setTransactions(senderTransactions);
-		userRepo.save(sender);
-		
-		sender.setTransactions(senderTransactions);
-		Transaction beneficiaryTransaction = new Transaction(TransactionType.DEBIT, amountToTransfer, senderUserProfile.getAccountNumber(),
-				                                  transferRequestPayload.getDescription(), null, beneficiary.getUser());
-		User beneficiaryUser = beneficiary.getUser();
-		List<Transaction> beneficiaryUserTransactions = beneficiaryUser.getTransactions();
-		beneficiaryUserTransactions.add(beneficiaryTransaction);
-		userRepo.save(beneficiaryUser);
 	}
 
 	
-	@Override
-	public BigDecimal getTransferCharges() {
-		String transferFee = "25.00";
-		BigDecimal transferCharges = new BigDecimal(transferFee);
-		return transferCharges;
-	}
+//	@Override
+//	public BigDecimal getTransferCharges() {
+//		String transferFee = "25.00";
+//		BigDecimal transferCharges = new BigDecimal(transferFee);
+//		return transferCharges;
+//	}
 	
 	
 	
@@ -314,7 +404,7 @@ public class UserServiceImpl implements UserService{
 	public User deactivateUser(String username) {
 		User user = userRepo.getByUsername(username);
 		if(user == null) throw new CredentialNotFoundException("invalid user");
-		user.setIsActive("deactivated");
+		user.setIsActive(DEACTIVATED.name());
 		userRepo.save(user);
 		return user;
 	}
@@ -325,7 +415,7 @@ public class UserServiceImpl implements UserService{
 	public User activateUser(String username) {
 		User user = userRepo.getByUsername(username);
 		if(user == null) throw new CredentialNotFoundException("invalid user");
-		user.setIsActive("active");
+		user.setIsActive(ACTIVE.name());
 		userRepo.save(user);
 		return user;
 	}
@@ -334,7 +424,7 @@ public class UserServiceImpl implements UserService{
 	public User deactivateCashier(String username) {
 		User user = userRepo.getByUsername(username);
 		if(user == null) throw new CredentialNotFoundException("invalid cashier");
-		user.setIsActive("deactivated");
+		user.setIsActive(DEACTIVATED.name());
 		userRepo.save(user);
 		return user;
 	}
@@ -344,7 +434,7 @@ public class UserServiceImpl implements UserService{
 	public User activateCashier(String username) {
 		User user = userRepo.getByUsername(username);
 		if(user == null) throw new CredentialNotFoundException("invalid cashier");
-		user.setIsActive("active");
+		user.setIsActive(ACTIVE.name());
 		userRepo.save(user);
 		return user;
 	}
@@ -363,11 +453,11 @@ public class UserServiceImpl implements UserService{
 		verifyBeneficiaryAccountNumber(withdrawalRequestPayload.getAccountNumber());
 		verifyTransferFund(withdrawalRequestPayload.getAmountToWithdraw());
 		
-		BigDecimal minimumWithdrawal = new BigDecimal("500");
+		BigDecimal minimumWithdrawal = MINIMUM_WITHDRAWAL;
 	    UserProfile accountOwner = userProfileRepo.getByAccountNumber(withdrawalRequestPayload.getAccountNumber());
 		
 		if(accountOwner == null) throw new InvalidCredentialException("this account number does not exist");
-		BigDecimal withdrawalCharges = getWithdrawalCharges(); 
+		BigDecimal withdrawalCharges = WITHDRAWAL_CHARGE; 
 		BigDecimal ownerAccountBalance = accountOwner.getAccountBalance();
 		BigDecimal amountToTransfer = new BigDecimal(withdrawalRequestPayload.getAmountToWithdraw());
 		BigDecimal totalDebit = withdrawalCharges.add(amountToTransfer);
@@ -415,10 +505,15 @@ public class UserServiceImpl implements UserService{
 	}
 	
 	private User createTransaction(UserProfile userProfile, String trasactionType, String staffUsername, BigDecimal amount,String description) {
-		TransactionType transactType = TransactionType.DEBIT;
-		if(trasactionType.equals("credit")) transactType = TransactionType.CREDIT;
+		String transactType = TransactionType.DEBIT.name();
+		
+		if(trasactionType.equalsIgnoreCase(TransactionType.CREDIT.name())) {
+			transactType = TransactionType.CREDIT.name();
+		}
+		
+		String transactionId = generateTransactionId();
 		Transaction accountOwnerNewTransaction= new Transaction(transactType, amount, null,
-				description, staffUsername, userProfile.getUser());
+				description, staffUsername, userProfile.getUser(), transactionId);
 		User accountOwnerUser = userProfile.getUser();
 		List<Transaction> accountOwnerTransactions = accountOwnerUser.getTransactions();
 		accountOwnerTransactions.add(accountOwnerNewTransaction);
@@ -426,27 +521,39 @@ public class UserServiceImpl implements UserService{
 		return accountOwnerUser;
 	}
 	
-	@Override
-	public BigDecimal getWithdrawalCharges() {
-		String withdrawalFee = "50.00";
-		BigDecimal withdrawalCharges = new BigDecimal(withdrawalFee);
-		return withdrawalCharges;
-	}
+
+	
+//	@Override
+//	public BigDecimal getWithdrawalCharges() {
+//		String withdrawalFee = "50.00";
+//		BigDecimal withdrawalCharges = new BigDecimal(withdrawalFee);
+//		return withdrawalCharges;
+//	}
 
 
 
 	public void verifyBeneficiaryAccountNumber(String accountNumber) {
-		if(!accountNumber.startsWith("0") || accountNumber.length() != 10 || !accountNumber.matches("[0-9]+")) {
+		if(!accountNumber.matches("0\\d{9}")) {
 			throw new InvalidCredentialException("invalid beneficiary account number");
 		}
 		
 	}
 	
-	private void verifyTransferFund(String transferAmount) {
-		if(!transferAmount.matches("[0-9]+")) {
+	public String verifyTransferFund(String transferAmount) {
+		transferAmount = transferAmount.replaceAll(",", "");
+		transferAmount = transferAmount.replaceAll(" ", "");
+		
+		// transfer amount must be all digits but may or may not contain decimals
+		if(!transferAmount.matches("\\d+(\\.\\d{2})?")) {
 			throw new InvalidCredentialException("invalid fund - fund must be all digits");
 		}
 		
+		// if transfer amount does not contain decimal append it
+		if (!transferAmount.matches(".+\\.\\d{2}")) {
+					transferAmount += ".00";
+		}
+		
+		return transferAmount;
 	}
 
     
@@ -481,7 +588,7 @@ public class UserServiceImpl implements UserService{
 		String appUrl = httpServletRequest.getScheme() + "://" + httpServletRequest.getServerName();
 		// Email message
 		SimpleMailMessage passwordResetEmail = new SimpleMailMessage();
-		passwordResetEmail.setFrom("smartpromise380@gmail.com");
+		passwordResetEmail.setFrom("tapp1903@gmail.com");
 		passwordResetEmail.setTo(passwordResetRequest.getEmail());
 		passwordResetEmail.setSubject("Password Reset Request");
 		String message = "Hi " + user.getFullname() + ",\n Someone requested to reset your password, if it wasn't you kindly ignore this"
@@ -525,49 +632,9 @@ public class UserServiceImpl implements UserService{
 		return resetToken;		
 	}
 
-	@Override
-	public void changePin(@Valid ChangePinRequest changePinRequest, String username) {
-		User user = userRepo.getByUsername(username);
-		if(user == null) {
-			throw new InvalidCredentialException("invalid credential supplied"); 
-		}
-		
-		UserProfile userProfile = userProfileRepo.getUserProfileByUserId(user.getId());
-		if(userProfile == null) {
-			throw new InvalidCredentialException("invalid credential supplied"); 
-		}
-		
-		if(!passwordEncoder.matches(changePinRequest.getCurrentPin(), userProfile.getTransferPin())) {
-			throw new InvalidCredentialException("invalid credential supplied");
-		}
-		
-		userProfile.setTransferPin(passwordEncoder.encode(changePinRequest.getNewPin()));
-		userProfileRepo.save(userProfile);
-		
-		if(user.getIsActive().equals("registration confirmed")) {
-			user.setIsActive("active");
-			userRepo.save(user);
-		}
-		
-	}
 
-	@Override
-	public String confirmRegistration(String confirmationToken) {
-		if(confirmationToken == null) {
-			return "invalid token or something went wrong, your registration is not confirmed!";
-		}
-		PinReset pinReset = pinResetRepo.getByResetToken(confirmationToken);
-		if(pinReset == null) {
-			return "invalid token or something went wrong, your registration is not confirmed!";
-		}
-		
-		UserProfile userProfile = pinReset.getUserProfile();
-		User user = userProfile.getUser();
-		user.setIsActive("registration-confirmed");
-		userRepo.save(user);
-				
-		return "registration successful";
-	}
+
+
 
 	@Override
 	public AccountInfoResponse getAccountInfo(String username) {
@@ -579,14 +646,19 @@ public class UserServiceImpl implements UserService{
 		return accountInfo;
 	}
 
+	@Override
+	public List<UserProfile> getDummyAccounts() {
+		List<UserProfile> userProfiles = userProfileRepo.getDummyAccounts();
+		return userProfiles;
+	}
 
-	
-	
-	
-	
-	
-	
-	
-	
+	@Override
+	public List<Transaction> getTransactionDetails(String transactionId) {
+		List<Transaction> transactions = transactionRepo.getById(transactionId);
+		if (transactions.size() == 0) {
+			throw new InvalidCredentialException("No transaction with transaction id " + transactionId);
+		}
+		return transactions;
+	}	
 
 }

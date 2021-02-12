@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import static com.banka.model.UserStatus.REGISTRATION_NOT_CONFIRMED;
 
 import javax.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -22,7 +23,7 @@ public class User {
 	@Column(updatable = false, unique = true)
 	private String username;
 	private String password;
-	private String isActive = "registered";
+	private String isActive = REGISTRATION_NOT_CONFIRMED.name();
 
 	
 	@Column(updatable = false)
@@ -159,8 +160,6 @@ public class User {
 		this.transactions = transactions;
 	}
 
-
-	
 
 
 	public String getIsActive() {

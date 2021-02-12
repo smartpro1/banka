@@ -20,8 +20,8 @@ public class ChangePinValidator implements Validator{
 	@Override
 	public void validate(Object target, Errors errors) {
 		ChangePinRequest changePinRequest = (ChangePinRequest) target;
-		if(changePinRequest.getNewPin().length() < 4 || changePinRequest.getNewPin().length() > 4) {
-			errors.rejectValue("newPin", "Length", "must be exactly four characters");
+		if(changePinRequest.getNewPin().length() < 4 || changePinRequest.getNewPin().length() > 8) {
+			errors.rejectValue("newPin", "Length", "new pin must be four to eight characters");
 		}
 		
 		if(!changePinRequest.getNewPin().equals(changePinRequest.getConfirmNewPin())) {

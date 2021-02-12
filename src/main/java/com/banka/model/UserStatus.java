@@ -1,0 +1,11 @@
+package com.banka.model;
+
+public enum UserStatus {
+REGISTRATION_NOT_CONFIRMED,
+DEFAULT_PIN_NOT_CHANGED,
+ACTIVE,
+FROZEN,
+SUSPENDED,
+DEACTIVATED,
+BLOCKED
+}

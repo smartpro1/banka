@@ -3,21 +3,23 @@ package com.banka.payloads;
 
 public class TransferRequestPayload {
 	
-	private String accountNumber;
-	private String transferAmount;
+	private String benfAcctNum;
+	private String amount;
 	private String description;
+	private String pin;
 	
-	public String getAccountNumber() {
-		return accountNumber;
+	
+	public String getBenfAcctNum() {
+		return benfAcctNum;
 	}
-	public void setAccountNumber(String accountNumber) {
-		this.accountNumber = accountNumber;
+	public void setBenfAcctNum(String benfAcctNum) {
+		this.benfAcctNum = benfAcctNum;
 	}
-	public String getTransferAmount() {
-		return transferAmount;
+	public String getAmount() {
+		return amount;
 	}
-	public void setTransferAmount(String transferAmount) {
-		this.transferAmount = transferAmount;
+	public void setAmount(String amount) {
+		this.amount = amount;
 	}
 	public String getDescription() {
 		return description;
@@ -25,6 +27,15 @@ public class TransferRequestPayload {
 	public void setDescription(String description) {
 		this.description = description;
 	}
+	
+	
+	public String getPin() {
+		return pin;
+	}
+	public void setPin(String pin) {
+		this.pin = pin;
+	}
+	
 	
 	
 	

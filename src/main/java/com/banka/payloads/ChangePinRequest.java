@@ -7,12 +7,12 @@ import javax.validation.constraints.Size;
 public class ChangePinRequest {
 	
 	@NotBlank(message="pin cannot be blank")
-	@Size(min = 4, max = 4, message="pin must be exactly four characters long")
+	@Size(min = 4, max = 8, message="current pin must be four to eight digits long")
 	private String currentPin;
 	
 	@NotBlank(message="pin cannot be blank")
-	@Size(min = 4, max = 4, message="pin must be exactly four characters long")
-   private String newPin;
+	@Size(min = 4, max = 8, message="new pin must be four to eight digits long")
+    private String newPin;
 	
 	@Transient
 	private String confirmNewPin;
@@ -39,6 +39,12 @@ public class ChangePinRequest {
 
 	public void setConfirmNewPin(String confirmNewPin) {
 		this.confirmNewPin = confirmNewPin;
+	}
+
+	@Override
+	public String toString() {
+		return "ChangePinRequest [currentPin=" + currentPin + ", newPin=" + newPin + ", confirmNewPin=" + confirmNewPin
+				+ "]";
 	}
 	
 	

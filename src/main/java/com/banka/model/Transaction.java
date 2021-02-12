@@ -14,11 +14,12 @@ public class Transaction {
 	@GeneratedValue(strategy= GenerationType.IDENTITY)
 	private Long id;
 	
-	private TransactionType transactionType;
+	private String transactionType;
 	private BigDecimal amount;
 	private String accountNumberInvolved;
 	private String description;
 	private String staffInvolved;
+	private String TransactionId;
 	@Column(updatable = false)
 	private LocalDateTime created_At;
 //	private RoleName role;
@@ -34,14 +35,15 @@ public class Transaction {
 	}
 	
 	
-	public Transaction(TransactionType transactionType, BigDecimal amount, String accountNumberInvolved, String description,
-			String staffInvolved, User user) {
+	public Transaction(String transactionType, BigDecimal amount, String accountNumberInvolved, String description,
+			String staffInvolved, User user, String TransactionId) {
 		this.transactionType = transactionType;
 		this.amount = amount;
 		this.accountNumberInvolved = accountNumberInvolved;
 		this.description = description;
 		this.staffInvolved = staffInvolved;
 		this.user = user;
+		this.TransactionId = TransactionId;
 	}
 
 
@@ -59,12 +61,12 @@ public class Transaction {
 	}
 
 
-	public TransactionType getTransactionType() {
+	public String getTransactionType() {
 		return transactionType;
 	}
 
 
-	public void setTransactionType(TransactionType transactionType) {
+	public void setTransactionType(String transactionType) {
 		this.transactionType = transactionType;
 	}
 
@@ -121,6 +123,16 @@ public class Transaction {
 
 	public void setUser(User user) {
 		this.user = user;
+	}
+	
+	
+	public String getTransactionId() {
+		return TransactionId;
+	}
+
+
+	public void setTransactionId(String transactionId) {
+		TransactionId = transactionId;
 	}
 
 
