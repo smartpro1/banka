@@ -1,13 +1,17 @@
 package com.banka.security;
 
-
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import com.banka.model.CustomUserDetails;
+import com.banka.model.Transaction;
+import com.banka.model.UserProfile;
+import com.banka.repositories.TransactionRepository;
+import com.banka.repositories.UserProfileRepository;
+import com.banka.repositories.TransactionRepository;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -19,12 +23,20 @@ import io.jsonwebtoken.UnsupportedJwtException;
 
 import static com.banka.security.SecurityConstants.*;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
 public class JwtTokenProvider {
+	
+	@Autowired
+	private UserProfileRepository userProfileRepo;
+	
+	@Autowired
+	private TransactionRepository transactionRepo;
 
 	private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
 	
@@ -33,12 +45,21 @@ public class JwtTokenProvider {
 		CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
 		Date now = new Date();
 		Date expiryDate = new Date(now.getTime() + EXPIRATION_TIME);
+		UserProfile userProfile = userProfileRepo.getByUser(user);
+		String acctNum = userProfile.getAccountNumber();
+		BigDecimal acctBal = userProfile.getAccountBalance();
+		List<Transaction> transactions = transactionRepo.getByUser(user);
 		
 		String userId = Long.toString(user.getId());
 		Map<String, Object> claims = new HashMap<>();
 		claims.put("id", userId);
 		claims.put("username", user.getUsername());
 		claims.put("email", user.getEmail());
+		claims.put("fullname", user.getFullname());
+		claims.put("acctNum", acctNum);
+		claims.put("acctBal", acctBal);
+		claims.put("transactions", transactions);
+		
 		
 		String jws = Jwts.builder()
 				.setSubject(userId)

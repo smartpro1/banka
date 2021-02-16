@@ -250,7 +250,7 @@ public class UserController {
 
 	@GetMapping("/transaction-details")
 	public ResponseEntity<List<Transaction>> getTransactionDetails(String transactionId) {
-		List<Transaction> transactions = userService.getTransactionDetails(transactionId);
+		List<Transaction> transactions = userService.getTransactionByTransId(transactionId);
 		return new ResponseEntity<List<Transaction>>(transactions, HttpStatus.OK);
 	}
 

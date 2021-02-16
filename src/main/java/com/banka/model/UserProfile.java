@@ -14,8 +14,7 @@ public class UserProfile {
 	private Long id;
 	private String phoneNumber;
 	private String accountNumber;
-	private BigDecimal accountBalance = new BigDecimal("25000.00");
-	private String transferPin;
+	private BigDecimal accountBalance = new BigDecimal("0.00");
 	
 	// oneToOne with User
 //	@OneToOne(fetch = FetchType.EAGER)
@@ -33,10 +32,9 @@ public class UserProfile {
 		
 	}
 
-	public UserProfile(String phoneNumber, String accountNumber, String transferPin) {
+	public UserProfile(String phoneNumber, String accountNumber) {
 		this.phoneNumber = phoneNumber;
 		this.accountNumber = accountNumber;
-		this.transferPin = transferPin;
 	}
 
 	public Long getId() {
@@ -79,19 +77,13 @@ public class UserProfile {
 		this.user = user;
 	}
 
-	public String getTransferPin() {
-		return transferPin;
-	}
 
-	public void setTransferPin(String transferPin) {
-		this.transferPin = transferPin;
-	}
 	
 	
 	@Override
 	public String toString() {
 		return "UserProfile [id=" + id + ", phoneNumber=" + phoneNumber + ", accountNumber=" + accountNumber
-				+ ", accountBalance=" + accountBalance + ", transferPin=" + transferPin + ", user=" + user + "]";
+				+ ", accountBalance=" + accountBalance + ", user=" + user + "]";
 	}	
 
 }

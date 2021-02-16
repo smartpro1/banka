@@ -77,6 +77,7 @@ class BankaApplicationTests {
 //    	mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
 //    }
 	
+	/*
 	@Test
 	public void testDeactivateUser() throws  Exception {
 		User user = new User("akeni", "male", "username", "akeni@yahoo.com", "password");
@@ -131,5 +132,6 @@ class BankaApplicationTests {
 		//assertThat(result.intValue()).isEqualTo(transferCharge.intValue());
 	}
 	
+	*/
 
 }

@@ -54,5 +54,5 @@ RegistrationSuccessResponse confirmRegistration(String confirmationToken);
 AccountInfoResponse getAccountInfo(String username);
 
 List<UserProfile> getDummyAccounts();
-List<Transaction> getTransactionDetails(String transactionId);
+List<Transaction> getTransactionByTransId(String transactionId);
 }

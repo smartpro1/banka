@@ -19,7 +19,8 @@ public class Transaction {
 	private String accountNumberInvolved;
 	private String description;
 	private String staffInvolved;
-	private String TransactionId;
+	@Column(updatable = false, unique = true)
+	private String transactionId;
 	@Column(updatable = false)
 	private LocalDateTime created_At;
 //	private RoleName role;
@@ -36,14 +37,14 @@ public class Transaction {
 	
 	
 	public Transaction(String transactionType, BigDecimal amount, String accountNumberInvolved, String description,
-			String staffInvolved, User user, String TransactionId) {
+			String staffInvolved, User user, String transactionId) {
 		this.transactionType = transactionType;
 		this.amount = amount;
 		this.accountNumberInvolved = accountNumberInvolved;
 		this.description = description;
 		this.staffInvolved = staffInvolved;
 		this.user = user;
-		this.TransactionId = TransactionId;
+		this.transactionId = transactionId;
 	}
 
 
@@ -127,13 +128,13 @@ public class Transaction {
 	
 	
 	public String getTransactionId() {
-		return TransactionId;
+		return transactionId;
 	}
 
 
-	public void setTransactionId(String transactionId) {
-		TransactionId = transactionId;
-	}
+//	public void setTransactionId(String transactionId) {
+//		transactionId = transactionId;
+//	}
 
 
 	@PrePersist

@@ -12,11 +12,6 @@ public class EmailService {
 	private JavaMailSender javaMailSender;
 	
 	public void sendEmail(SimpleMailMessage email) {
-//		SimpleMailMessage mail = new SimpleMailMessage();
-//		mail.setTo(email);
-//		mail.setFrom("support@myprojectManager.com");
-//		mail.setSubject("Password Reset");
-//		mail.setText(text);
 		javaMailSender.send(email);
 	}
 }

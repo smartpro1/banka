@@ -2,6 +2,7 @@ package com.banka.model;
 
 import java.time.LocalDateTime;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -18,14 +19,15 @@ public class PinReset {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
+	@Column(unique=true)
 	private String resetToken;
 	private LocalDateTime expiryDate;
 	
 	// OneToOne with UserProfile
 		@OneToOne(fetch = FetchType.EAGER)
-		@JoinColumn(nullable = false, name="userProfile_id")
+		@JoinColumn(nullable = false, name="user_id")
 		@JsonIgnore
-		private UserProfile userProfile;
+		private User user;
 		
 		
 
@@ -33,10 +35,10 @@ public class PinReset {
 			
 		}
 
-		public PinReset(String resetToken, LocalDateTime expiryDate, UserProfile userProfile) {
+		public PinReset(String resetToken, LocalDateTime expiryDate, User user) {
 		this.resetToken = resetToken;
 		this.expiryDate = expiryDate;
-		this.userProfile = userProfile;
+		this.user = user;
 	}
 
 		public Long getId() {
@@ -63,13 +65,13 @@ public class PinReset {
 			this.expiryDate = expiryDate;
 		}
 
-		public UserProfile getUserProfile() {
-			return userProfile;
+		public User getUser() {
+			return user;
 		}
 
-		public void setUserProfile(UserProfile userProfile) {
-			this.userProfile = userProfile;
-		}
+//		public void setUser(User user) {
+//			this.user = user;
+//		}
 
 		
 		

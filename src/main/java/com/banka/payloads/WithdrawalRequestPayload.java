@@ -5,6 +5,7 @@ public class WithdrawalRequestPayload {
 	
 	private String accountNumber;
 	private String amountToWithdraw;
+	private String staffPin;
 	
 	public String getAccountNumber() {
 		return accountNumber;
@@ -18,6 +19,14 @@ public class WithdrawalRequestPayload {
 	public void setAmountToWithdraw(String amountToWithdraw) {
 		this.amountToWithdraw = amountToWithdraw;
 	}
+	public String getStaffPin() {
+		return staffPin;
+	}
+	public void setStaffPin(String staffPin) {
+		this.staffPin = staffPin;
+	}
+	
+	
 	
 	
 }

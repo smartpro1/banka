@@ -24,6 +24,7 @@ public class User {
 	private String username;
 	private String password;
 	private String isActive = REGISTRATION_NOT_CONFIRMED.name();
+	private String transferPin;
 
 	
 	@Column(updatable = false)
@@ -49,12 +50,13 @@ public class User {
 	}
 	
 	
-	public User(String fullname, String sex, String username, String email, String password) {
+	public User(String fullname, String sex, String username, String email, String password, String transferPin) {
 		this.fullname = fullname;
 		this.sex = sex;
 		this.email = email;
 		this.username = username;
 		this.password = password;
+		this.transferPin = transferPin;
 	}
 
 
@@ -169,6 +171,18 @@ public class User {
 
 	public void setIsActive(String isActive) {
 		this.isActive = isActive;
+	}
+	
+	
+
+
+	public String getTransferPin() {
+		return transferPin;
+	}
+
+
+	public void setTransferPin(String transferPin) {
+		this.transferPin = transferPin;
 	}
 
 

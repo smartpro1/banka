@@ -7,6 +7,7 @@ public class MakeDepositPayload {
 	private String depositAmount;
 	private String nameOfDepositor;
 	private String description;
+	private String staffPin;
 	
 	public String getAccountNumber() {
 		return accountNumber;
@@ -32,6 +33,12 @@ public class MakeDepositPayload {
 	}
 	public void setDescription(String description) {
 		this.description = description;
+	}
+	public String getStaffPin() {
+		return staffPin;
+	}
+	public void setStaffPin(String staffPin) {
+		this.staffPin = staffPin;
 	}
 	
 	

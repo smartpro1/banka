@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import com.banka.model.CustomUserDetails;
 import com.banka.model.UserProfile;
 
 @Repository
@@ -22,5 +23,7 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long>{
     List<UserProfile> getDummyAccounts();
 
 	UserProfile getById(Long id);
+
+	UserProfile getByUser(CustomUserDetails user);
 
 }

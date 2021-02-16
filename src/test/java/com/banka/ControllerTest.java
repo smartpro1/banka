@@ -31,7 +31,7 @@ public class ControllerTest {
 	@Autowired
 	private UserController userController;
 	
-
+/*
 	@Test
 	public void getTransferCharges() {
 		BigDecimal transferCharge = new BigDecimal("250.00");
@@ -40,4 +40,5 @@ public class ControllerTest {
 	    assertEquals(result.intValue(), transferCharge.intValue());
 		//assertThat(result.intValue()).isEqualTo(transferCharge.intValue());
 	}
+	*/
 }

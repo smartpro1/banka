@@ -57,6 +57,7 @@ import com.banka.repositories.UserRepository;
 import static com.banka.utils.Constants.*;
 import static com.banka.model.UserStatus.*;
 import static com.banka.utils.GenTransactionId.*;
+import static com.banka.model.RoleName.*;
 
 @Service
 @Transactional
@@ -98,19 +99,25 @@ public class UserServiceImpl implements UserService{
 	public User registerUser(UserRegPayload userRegPayload, HttpServletRequest httpServletRequest) {
 		checkIfUsernameOrEmailExists(userRegPayload);
 		
+		String transferPin = generateTransferPin();
 		User newUser = new User(userRegPayload.getFullname(), userRegPayload.getSex(), userRegPayload.getUsername(), userRegPayload.getEmail(), 
-				passwordEncoder.encode(userRegPayload.getPassword()));
+				passwordEncoder.encode(userRegPayload.getPassword()), passwordEncoder.encode(transferPin));
 		
-		if(userRegPayload.getRole() == null) userRegPayload.setRole("user");
+		if(userRegPayload.getRole() == null) {
+			userRegPayload.setRole(ROLE_USER.name());
+		}
+		
 		Role userRole = assignRole(userRegPayload);
 		
-		if (userRole == null) throw new CredentialNotFoundException("role not found");
+		if (userRole == null) {
+			throw new CredentialNotFoundException("role not found");
+		}
 		
 		newUser.setRoles(Collections.singleton(userRole));
 		
 		
 		
-		if(userRegPayload.getRole().equalsIgnoreCase("cashier") || userRegPayload.getRole().equalsIgnoreCase("admin")) {
+		if(userRegPayload.getRole().equalsIgnoreCase(ROLE_CASHIER.name()) || userRegPayload.getRole().equalsIgnoreCase(ROLE_ADMIN.name())) {
 			String staffRole = userRegPayload.getRole();
 			AdminProfile adminProfile = new AdminProfile(staffRole);
 			adminProfile.setAdmin(newUser);
@@ -122,22 +129,19 @@ public class UserServiceImpl implements UserService{
 			verifyPhoneNumber(phoneNumber);
 			checkIfPhoneNumberExists(phoneNumber);
 			String accountNumber = generateAccountNumber();
-			String transferPin = generateTransferPin();
-			UserProfile userProfile = new UserProfile(phoneNumber, accountNumber, passwordEncoder.encode(transferPin));
+			UserProfile userProfile = new UserProfile(phoneNumber, accountNumber);
 			userProfile.setUser(newUser);
-			 userRepo.save(newUser);
+			userRepo.save(newUser);
 			userProfileRepo.save(userProfile);
 			//newUser.setUserProfile(userProfile);
 			//smsService.sendSMS(userRegPayload.getFullname(), phoneNumber, accountNumber);
 			
 			// create PinReset credentials for activation
 			String generatedToken = generateResetToken();
-			int validityTimeInSeconds = 60 * 60 * 1/2; // 30 minutes
-			LocalDateTime now = LocalDateTime.now();
-			LocalDateTime expiryDate = now.plusSeconds(validityTimeInSeconds);
-			PinReset pinReset = new PinReset(generatedToken, expiryDate, userProfile);
-			pinResetRepo.save(pinReset);
+			createPinResetToken(newUser, generatedToken);
 			
+			// create registration bonus 
+			createRegistrationBonus(userProfile);
 			// send activation mail
 				sendMailForAccountActivation(newUser, transferPin, httpServletRequest, generatedToken);
 		
@@ -145,7 +149,6 @@ public class UserServiceImpl implements UserService{
 		
 		return newUser;
 	}
-	
 	
 	@Override
 	public RegistrationSuccessResponse confirmRegistration(String confirmationToken) {
@@ -157,8 +160,7 @@ public class UserServiceImpl implements UserService{
 			throw new InvalidCredentialException("invalid token or something went wrong, your registration is not confirmed!");
 		}
 		
-		UserProfile userProfile = pinReset.getUserProfile();
-		User user = userProfile.getUser();
+		User user = pinReset.getUser();
 		user.setIsActive(DEFAULT_PIN_NOT_CHANGED.name());
 		userRepo.save(user);
 		RegistrationSuccessResponse regSuccessResponse = new RegistrationSuccessResponse(user.getFullname());
@@ -173,23 +175,25 @@ public class UserServiceImpl implements UserService{
 			throw new InvalidCredentialException("invalid credential supplied"); 
 		}
 		
-		UserProfile userProfile = userProfileRepo.getUserProfileByUserId(user.getId());
-		if(userProfile == null) {
-			throw new InvalidCredentialException("invalid credential supplied"); 
-		}
+//		UserProfile userProfile = userProfileRepo.getUserProfileByUserId(user.getId());
+//		if(userProfile == null) {
+//			throw new InvalidCredentialException("invalid credential supplied"); 
+//		}
 		
-		if(!passwordEncoder.matches(changePinRequest.getCurrentPin(), userProfile.getTransferPin())) {
-			throw new InvalidCredentialException("invalid pin");
-		}
+//		if(!passwordEncoder.matches(changePinRequest.getCurrentPin(), userProfile.getTransferPin())) {
+//			throw new InvalidCredentialException("invalid pin");
+//		}
+		
+		comparePins(changePinRequest.getCurrentPin(), user.getTransferPin());
 		
 		// pin must be 4 to 8 digits
 		if (!changePinRequest.getConfirmNewPin().matches("\\d{4,8}")) {
-			throw new InvalidCredentialException("new pin must be 4 to 8 digits long");
+			throw new InvalidCredentialException("new pin must be all digits and 4 to 8 digits long");
 		}
 		
 		
-		userProfile.setTransferPin(passwordEncoder.encode(changePinRequest.getNewPin()));
-		userProfileRepo.save(userProfile);
+		user.setTransferPin(passwordEncoder.encode(changePinRequest.getNewPin()));
+		userRepo.save(user);
 		
 		if(user.getIsActive().equals(DEFAULT_PIN_NOT_CHANGED.name())) {
 			user.setIsActive(ACTIVE.name());
@@ -197,6 +201,7 @@ public class UserServiceImpl implements UserService{
 		}
 		
 	}
+	
 	
 	@Override
 	public TransferSuccessResponse makeTransfer(TransferRequestPayload transferRequestPayload, String name) {
@@ -215,16 +220,19 @@ public class UserServiceImpl implements UserService{
 			throw new InvalidCredentialException("invalid user");
 		}
 		
-		// check here it shouldn't be active 
+		 
 		if(!sender.getIsActive().equalsIgnoreCase(ACTIVE.name())) {
 			informUser(sender.getIsActive());
 		}
 		
+		
+		
 		// compare pins -- to be moved
-		UserProfile userProfile = userProfileRepo.getById(sender.getId());
-		if(!passwordEncoder.matches(transferRequestPayload.getPin(), userProfile.getTransferPin())) {
-			throw new InvalidCredentialException("invalid pin supplied");
-		}
+//		if(!passwordEncoder.matches(transferRequestPayload.getPin(), userProfile.getTransferPin())) {
+//			throw new InvalidCredentialException("invalid pin supplied");
+//		}
+		
+		comparePins(transferRequestPayload.getPin(), sender.getTransferPin());
 
 		
 		BigDecimal transferCharges = TRANSFER_CHARGE; 
@@ -232,6 +240,10 @@ public class UserServiceImpl implements UserService{
 		BigDecimal senderAccountBalance = senderUserProfile.getAccountBalance();
 		BigDecimal amountToTransfer = new BigDecimal(transferRequestPayload.getAmount());
 		BigDecimal totalDebit = transferCharges.add(amountToTransfer);
+		
+		if (senderUserProfile.getAccountNumber().equals(transferRequestPayload.getBenfAcctNum())) {
+			throw new InvalidCredentialException("You cannot transfer money to yourself.");
+		}
 		
 		if(senderAccountBalance.compareTo(totalDebit) < 0) {
 			 throw new InsufficientFundException("insufficient fund");
@@ -262,19 +274,21 @@ public class UserServiceImpl implements UserService{
 		String description = transferRequestPayload.getDescription();
 		Transaction senderTransaction = new Transaction(TransactionType.DEBIT.name(), totalDebit, beneficiary.getAccountNumber(), 
 				                                          description,null, sender, transactionId);
-		List<Transaction> senderTransactions = sender.getTransactions();
-		senderTransactions.add(senderTransaction);
-		sender.setTransactions(senderTransactions);
-		userRepo.save(sender);
+		addTransaction(sender, senderTransaction);
+//		List<Transaction> senderTransactions = sender.getTransactions();
+//		senderTransactions.add(senderTransaction);
+//		sender.setTransactions(senderTransactions);
+//		userRepo.save(sender);
 		
-		sender.setTransactions(senderTransactions);
+	//	sender.setTransactions(senderTransactions);
 		Transaction beneficiaryTransaction = new Transaction(TransactionType.CREDIT.name(), amountToTransfer, senderUserProfile.getAccountNumber(),
 				                                description, null, beneficiary.getUser(), transactionId);
 		
 		User beneficiaryUser = beneficiary.getUser();
-		List<Transaction> beneficiaryUserTransactions = beneficiaryUser.getTransactions();
-		beneficiaryUserTransactions.add(beneficiaryTransaction);
-		userRepo.save(beneficiaryUser);
+		addTransaction(beneficiaryUser, beneficiaryTransaction);
+//		List<Transaction> beneficiaryUserTransactions = beneficiaryUser.getTransactions();
+//		beneficiaryUserTransactions.add(beneficiaryTransaction);
+//		userRepo.save(beneficiaryUser);
 		
 		// create transfer response object and return it.
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm a");
@@ -283,6 +297,105 @@ public class UserServiceImpl implements UserService{
 				         sender.getFullname(), beneficiaryUser.getFullname(), amountToTransfer.toString(), transactionId, transactionTime, description);
 		
 		return transferResponse;
+	}
+	
+	
+	@Override
+	public void makeWithdrawal(@Valid WithdrawalRequestPayload withdrawalRequestPayload, String staffUsername) {
+		verifyBeneficiaryAccountNumber(withdrawalRequestPayload.getAccountNumber());
+		String withdrawalAmt = verifyTransferFund(withdrawalRequestPayload.getAmountToWithdraw());  
+		withdrawalRequestPayload.setAmountToWithdraw(withdrawalAmt);
+		User staff = userRepo.getByUsername(staffUsername);
+		
+		if (staff == null) {
+			throw new InvalidCredentialException("invalid staff");
+		}
+		
+		comparePins(withdrawalRequestPayload.getStaffPin(), staff.getTransferPin());
+		
+		BigDecimal minimumWithdrawal = MINIMUM_WITHDRAWAL;
+	    UserProfile accountOwner = userProfileRepo.getByAccountNumber(withdrawalRequestPayload.getAccountNumber());
+		
+		if(accountOwner == null) {
+			throw new InvalidCredentialException("this account number does not exist");
+		}
+		
+		BigDecimal withdrawalCharges = WITHDRAWAL_CHARGE; 
+		BigDecimal ownerAccountBalance = accountOwner.getAccountBalance();
+		BigDecimal amountToTransfer = new BigDecimal(withdrawalRequestPayload.getAmountToWithdraw());
+		BigDecimal totalDebit = withdrawalCharges.add(amountToTransfer);
+		
+		if(amountToTransfer.compareTo(minimumWithdrawal) < 0) {
+			 throw new InsufficientFundException("minimum withdrawal is " + minimumWithdrawal);
+		}
+		
+		if(ownerAccountBalance.compareTo(totalDebit) < 0) {
+			 throw new InsufficientFundException("insufficient fund");
+		}
+		
+		BigDecimal newAcctBal = ownerAccountBalance.subtract(totalDebit);
+		accountOwner.setAccountBalance(newAcctBal);
+		userProfileRepo.save(accountOwner);
+		
+		// Create transaction
+		String transactionId = generateTransactionId();
+		String description = "withdrawal";
+		Transaction withdrawalTransaction = new Transaction(TransactionType.DEBIT.name(), totalDebit, withdrawalRequestPayload.getAccountNumber(), 
+				                                          description,staffUsername,accountOwner.getUser(), transactionId);
+		addTransaction(accountOwner.getUser(), withdrawalTransaction);
+	
+	}
+
+
+	@Override
+	public void makeDeposit(MakeDepositPayload makeDepositPayload, String staffUsername) {
+		verifyBeneficiaryAccountNumber(makeDepositPayload.getAccountNumber());
+		verifyTransferFund(makeDepositPayload.getDepositAmount());
+		
+		BigDecimal minimumDeposit = new BigDecimal("100");
+		UserProfile beneficiary = userProfileRepo.getByAccountNumber(makeDepositPayload.getAccountNumber());
+		
+		if(beneficiary == null) {
+			throw new InvalidCredentialException("beneficiary's account number does not exist");
+		}
+		
+        User staff = userRepo.getByUsername(staffUsername);
+        
+		if (staff == null) {
+			throw new InvalidCredentialException("invalid staff");
+		}
+		
+		comparePins(makeDepositPayload.getStaffPin(), staff.getTransferPin());
+		
+		BigDecimal amountToDeposit = new BigDecimal(makeDepositPayload.getDepositAmount());
+		
+		if(amountToDeposit.compareTo(minimumDeposit) < 0) {
+			 throw new InsufficientFundException("minimum deposit is " + minimumDeposit);
+		}
+		
+		BigDecimal newAccountBal = beneficiary.getAccountBalance().add(amountToDeposit);
+		beneficiary.setAccountBalance(newAccountBal);
+		userProfileRepo.save(beneficiary);
+		
+		String transactionId = generateTransactionId();
+		String description = "deposit";
+		Transaction depositTransaction = new Transaction(TransactionType.CREDIT.name(), amountToDeposit, makeDepositPayload.getAccountNumber(), 
+				                                          description,staffUsername, beneficiary.getUser(), transactionId);
+		addTransaction(beneficiary.getUser(), depositTransaction);
+		
+	}
+	
+	private void comparePins(String suppliedCurrentPin, String currentPin) {
+		if(!passwordEncoder.matches(suppliedCurrentPin, currentPin)) {
+			throw new InvalidCredentialException("invalid pin");
+		}
+	}
+	
+	private void addTransaction(User user, Transaction transaction) {
+		List<Transaction> userTransactions = user.getTransactions();
+		userTransactions.add(transaction);
+		user.setTransactions(userTransactions);
+		userRepo.save(user);
 	}
 	
 	private void sendMailForAccountActivation(User newUser, String transferPin, HttpServletRequest httpServletRequest, String generatedToken) {
@@ -337,9 +450,9 @@ public class UserServiceImpl implements UserService{
 	
 	private Role assignRole(UserRegPayload userRegPayload) {
 		
-		if(userRegPayload.getRole().equalsIgnoreCase("admin")) {
+		if(userRegPayload.getRole().equalsIgnoreCase(RoleName.ROLE_ADMIN.name())) {
 			return roleRepo.findByName(RoleName.ROLE_ADMIN);
-		} else if(userRegPayload.getRole().equalsIgnoreCase("cashier")) {
+		} else if(userRegPayload.getRole().equalsIgnoreCase(RoleName.ROLE_CASHIER.name())) {
 			return roleRepo.findByName(RoleName.ROLE_CASHIER);
 		}else {
 			return roleRepo.findByName(RoleName.ROLE_USER);
@@ -389,16 +502,6 @@ public class UserServiceImpl implements UserService{
 					+ " kindly contact support for more info .");
 		}
 	}
-
-	
-//	@Override
-//	public BigDecimal getTransferCharges() {
-//		String transferFee = "25.00";
-//		BigDecimal transferCharges = new BigDecimal(transferFee);
-//		return transferCharges;
-//	}
-	
-	
 	
 	@Override
 	public User deactivateUser(String username) {
@@ -446,91 +549,6 @@ public class UserServiceImpl implements UserService{
 		if (user == null) throw new CredentialNotFoundException("invalid user");
 		return user;
 	}
-
-
-	@Override
-	public void makeWithdrawal(@Valid WithdrawalRequestPayload withdrawalRequestPayload, String staffUsername) {
-		verifyBeneficiaryAccountNumber(withdrawalRequestPayload.getAccountNumber());
-		verifyTransferFund(withdrawalRequestPayload.getAmountToWithdraw());
-		
-		BigDecimal minimumWithdrawal = MINIMUM_WITHDRAWAL;
-	    UserProfile accountOwner = userProfileRepo.getByAccountNumber(withdrawalRequestPayload.getAccountNumber());
-		
-		if(accountOwner == null) throw new InvalidCredentialException("this account number does not exist");
-		BigDecimal withdrawalCharges = WITHDRAWAL_CHARGE; 
-		BigDecimal ownerAccountBalance = accountOwner.getAccountBalance();
-		BigDecimal amountToTransfer = new BigDecimal(withdrawalRequestPayload.getAmountToWithdraw());
-		BigDecimal totalDebit = withdrawalCharges.add(amountToTransfer);
-		
-		if(amountToTransfer.compareTo(minimumWithdrawal) < 0) {
-			 throw new InsufficientFundException("minimum withdrawal is " + minimumWithdrawal);
-		}
-		
-		if(ownerAccountBalance.compareTo(totalDebit) < 0) {
-			 throw new InsufficientFundException("insufficient fund");
-		}
-		
-		BigDecimal newAcctBal = ownerAccountBalance.subtract(totalDebit);
-		accountOwner.setAccountBalance(newAcctBal);
-		userProfileRepo.save(accountOwner);
-		
-		// Create transaction
-		User accountOwnerUser = createTransaction(accountOwner, "debit", staffUsername, amountToTransfer, null);
-		userRepo.save(accountOwnerUser);
-	}
-
-
-	@Override
-	public void makeDeposit(MakeDepositPayload makeDepositPayload, String staffUsername) {
-		verifyBeneficiaryAccountNumber(makeDepositPayload.getAccountNumber());
-		verifyTransferFund(makeDepositPayload.getDepositAmount());
-		
-		BigDecimal minimumDeposit = new BigDecimal("100");
-		UserProfile beneficiary = userProfileRepo.getByAccountNumber(makeDepositPayload.getAccountNumber());
-		
-		if(beneficiary == null) throw new InvalidCredentialException("beneficiary's account number does not exist");
-		
-		BigDecimal amountToDeposit = new BigDecimal(makeDepositPayload.getDepositAmount());
-		
-		if(amountToDeposit.compareTo(minimumDeposit) < 0) {
-			 throw new InsufficientFundException("minimum deposit is " + minimumDeposit);
-		}
-		
-		BigDecimal newAccountBal = beneficiary.getAccountBalance().add(amountToDeposit);
-		beneficiary.setAccountBalance(newAccountBal);
-		userProfileRepo.save(beneficiary);
-		
-		User accountOwnerUser = createTransaction(beneficiary, "credit", staffUsername, amountToDeposit, makeDepositPayload.getDescription());
-		userRepo.save(accountOwnerUser);
-	}
-	
-	private User createTransaction(UserProfile userProfile, String trasactionType, String staffUsername, BigDecimal amount,String description) {
-		String transactType = TransactionType.DEBIT.name();
-		
-		if(trasactionType.equalsIgnoreCase(TransactionType.CREDIT.name())) {
-			transactType = TransactionType.CREDIT.name();
-		}
-		
-		String transactionId = generateTransactionId();
-		Transaction accountOwnerNewTransaction= new Transaction(transactType, amount, null,
-				description, staffUsername, userProfile.getUser(), transactionId);
-		User accountOwnerUser = userProfile.getUser();
-		List<Transaction> accountOwnerTransactions = accountOwnerUser.getTransactions();
-		accountOwnerTransactions.add(accountOwnerNewTransaction);
-		accountOwnerUser.setTransactions(accountOwnerTransactions);
-		return accountOwnerUser;
-	}
-	
-
-	
-//	@Override
-//	public BigDecimal getWithdrawalCharges() {
-//		String withdrawalFee = "50.00";
-//		BigDecimal withdrawalCharges = new BigDecimal(withdrawalFee);
-//		return withdrawalCharges;
-//	}
-
-
 
 	public void verifyBeneficiaryAccountNumber(String accountNumber) {
 		if(!accountNumber.matches("0\\d{9}")) {
@@ -599,6 +617,48 @@ public class UserServiceImpl implements UserService{
 		
 	}
 	
+	private void createPinResetToken(User newUser, String generatedToken) {
+		int validityTimeInSeconds = 60 * 60 * 1/2; // 30 minutes
+		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime expiryDate = now.plusSeconds(validityTimeInSeconds);
+		PinReset pinReset = new PinReset(generatedToken, expiryDate, newUser);
+		pinResetRepo.save(pinReset);
+	}
+	
+	@Override
+	public AccountInfoResponse getAccountInfo(String username) {
+		User user = userRepo.getByUsername(username);
+		UserProfile userProfile = userProfileRepo.getUserProfileByUserId(user.getId());
+		
+		AccountInfoResponse accountInfo = new AccountInfoResponse(userProfile.getAccountNumber(), userProfile.getAccountBalance());
+	
+		return accountInfo;
+	}
+
+	@Override
+	public List<UserProfile> getDummyAccounts() {
+		List<UserProfile> userProfiles = userProfileRepo.getDummyAccounts();
+		return userProfiles;
+	}
+
+	@Override
+	public List<Transaction> getTransactionByTransId(String transactionId) {
+		List<Transaction> transactions = transactionRepo.getByTransactionId(transactionId);
+		if (transactions.size() == 0) {
+			throw new InvalidCredentialException("No transaction with transaction id " + transactionId);
+		}
+		return transactions ;
+	}
+	
+	//@Override
+	public List<Transaction> getTransactionByStaffInvolved(String staffUsername) {
+		List<Transaction> transactions = transactionRepo.getByStaffInvolved(staffUsername);
+		if (transactions.size() == 0) {
+			throw new InvalidCredentialException("No transaction found for staff with username " + staffUsername);
+		}
+		return transactions;
+	}	
+	
 	public void resetPassword(String password, String token) {
 		
 		LocalDateTime timeOfReset = LocalDateTime.now();
@@ -633,32 +693,17 @@ public class UserServiceImpl implements UserService{
 	}
 
 
-
-
-
-	@Override
-	public AccountInfoResponse getAccountInfo(String username) {
-		User user = userRepo.getByUsername(username);
-		UserProfile userProfile = userProfileRepo.getUserProfileByUserId(user.getId());
-		
-		AccountInfoResponse accountInfo = new AccountInfoResponse(userProfile.getAccountNumber(), userProfile.getAccountBalance());
-	
-		return accountInfo;
+	private void createRegistrationBonus(UserProfile userProfile) {
+		BigDecimal bonus = new BigDecimal("25000.00");
+		String transactionId = generateTransactionId();
+		userProfile.setAccountBalance(bonus);
+		userProfileRepo.save(userProfile);
+		Transaction bonusTransaction = new Transaction(TransactionType.REG_BONUS.name(), bonus, userProfile.getAccountNumber(), 
+                "registration bonus",null, null, transactionId);
+		transactionRepo.save(bonusTransaction);
 	}
 
-	@Override
-	public List<UserProfile> getDummyAccounts() {
-		List<UserProfile> userProfiles = userProfileRepo.getDummyAccounts();
-		return userProfiles;
-	}
 
-	@Override
-	public List<Transaction> getTransactionDetails(String transactionId) {
-		List<Transaction> transactions = transactionRepo.getById(transactionId);
-		if (transactions.size() == 0) {
-			throw new InvalidCredentialException("No transaction with transaction id " + transactionId);
-		}
-		return transactions;
-	}	
+
 
 }
