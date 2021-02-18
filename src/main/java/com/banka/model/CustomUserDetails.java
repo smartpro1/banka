@@ -16,17 +16,20 @@ public class CustomUserDetails implements UserDetails{
 	private String email;
 	private String username;
 	private String password;
-	private String isActive = "registered";
+	private String isActive;
+	private String transferPin;
 	private Collection<? extends GrantedAuthority> authorities;
 	
 	public CustomUserDetails(Long id, String fullname, String sex, String email, String username,
-			String password, Collection<? extends GrantedAuthority> authorities) {
+			String password,String transferPin, String isActive, Collection<? extends GrantedAuthority> authorities) {
 		this.id = id;
 		this.fullname = fullname;
 		this.sex = sex;
 		this.email = email;
 		this.username = username;
 		this.password = password;
+		this.transferPin = transferPin;
+		this.isActive = isActive;
 		this.authorities = authorities;
 	}
 
@@ -44,6 +47,8 @@ public class CustomUserDetails implements UserDetails{
 				user.getEmail(),
 				user.getUsername(),
 				user.getPassword(),
+				user.getTransferPin(),
+				user.getIsActive(),
 				authorities
 				);
 	}
@@ -71,6 +76,10 @@ public class CustomUserDetails implements UserDetails{
 
 	public String getIsActive() {
 		return isActive;
+	}
+	
+	public String getTransferPin() {
+		return transferPin;
 	}
 
 

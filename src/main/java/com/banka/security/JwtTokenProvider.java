@@ -8,10 +8,12 @@ import org.springframework.stereotype.Component;
 
 import com.banka.model.CustomUserDetails;
 import com.banka.model.Transaction;
+import com.banka.model.User;
 import com.banka.model.UserProfile;
 import com.banka.repositories.TransactionRepository;
 import com.banka.repositories.UserProfileRepository;
 import com.banka.repositories.TransactionRepository;
+import com.banka.repositories.UserRepository;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -37,6 +39,9 @@ public class JwtTokenProvider {
 	
 	@Autowired
 	private TransactionRepository transactionRepo;
+	
+	@Autowired
+	private UserRepository userRepo;
 
 	private static final Logger logger = LoggerFactory.getLogger(JwtTokenProvider.class);
 	
@@ -45,10 +50,11 @@ public class JwtTokenProvider {
 		CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
 		Date now = new Date();
 		Date expiryDate = new Date(now.getTime() + EXPIRATION_TIME);
-		UserProfile userProfile = userProfileRepo.getByUser(user);
+		User uzer = userRepo.getByUsername(user.getUsername());
+		UserProfile userProfile = userProfileRepo.getByUser(uzer);
 		String acctNum = userProfile.getAccountNumber();
 		BigDecimal acctBal = userProfile.getAccountBalance();
-		List<Transaction> transactions = transactionRepo.getByUser(user);
+		List<Transaction> transactions = transactionRepo.getByUser(uzer);
 		
 		String userId = Long.toString(user.getId());
 		Map<String, Object> claims = new HashMap<>();

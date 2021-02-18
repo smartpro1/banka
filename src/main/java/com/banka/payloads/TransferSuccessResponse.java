@@ -8,6 +8,8 @@ public class TransferSuccessResponse {
 	private String transactionId;
 	private String timeOfTransaction;
 	private String description;
+	private String benfAcctNum;
+	private String senderAcctBal;
 	
 	public TransferSuccessResponse() {
 		
@@ -16,13 +18,15 @@ public class TransferSuccessResponse {
 	
 
 	public TransferSuccessResponse(String sender, String beneficiary, String amount, String transactionId,
-			String timeOfTransaction, String description) {
+			String timeOfTransaction, String description, String benfAcctNum, String senderAcctBal) {
 		this.sender = sender;
 		this.beneficiary = beneficiary;
 		this.amount = amount;
 		this.transactionId = transactionId;
 		this.timeOfTransaction = timeOfTransaction;
 		this.description = description;
+		this.benfAcctNum = benfAcctNum;
+		this.senderAcctBal =  senderAcctBal;
 	}
 
 
@@ -57,5 +61,19 @@ public class TransferSuccessResponse {
 		return description;
 	}
 
+
+
+	public String getBenfAcctNum() {
+		return benfAcctNum;
+	}
+
+
+
+	public String getSenderAcctBal() {
+		return senderAcctBal;
+	}
+	
+	
+    
 		
 }

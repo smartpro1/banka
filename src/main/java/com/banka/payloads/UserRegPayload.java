@@ -18,7 +18,7 @@ public class UserRegPayload {
 	@Email(message="your email is invalid")
 	private String email;
 	@Size(min = 4, message="username cannot be empty or less than four characters")
-	@Column(updatable = false, unique = true) // properly test for this
+	//@Column(updatable = false, unique = true) // properly test for this
 	private String username;
 	private String role;
 	@Size(min =6, message="password cannot be empty or less than six characters")

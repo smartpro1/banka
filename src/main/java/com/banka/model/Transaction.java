@@ -19,7 +19,6 @@ public class Transaction {
 	private String accountNumberInvolved;
 	private String description;
 	private String staffInvolved;
-	@Column(updatable = false, unique = true)
 	private String transactionId;
 	@Column(updatable = false)
 	private LocalDateTime created_At;

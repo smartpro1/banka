@@ -31,6 +31,7 @@ import com.banka.payloads.MakeDepositPayload;
 import com.banka.payloads.PasswordResetRequest;
 import com.banka.payloads.RegistrationSuccessResponse;
 import com.banka.payloads.TransferRequestPayload;
+import com.banka.payloads.TransferSuccessResponse;
 import com.banka.payloads.UserLoginPayload;
 import com.banka.payloads.UserRegPayload;
 import com.banka.payloads.WithdrawalRequestPayload;
@@ -182,8 +183,8 @@ public class UserController {
 			return errorMap;
 		}
 		
-		 userService.makeTransfer(transferRequestPayload, principal.getName());
-		return new ResponseEntity<String>("Successful", HttpStatus.OK);
+		TransferSuccessResponse transferSuccess =  userService.makeTransfer(transferRequestPayload, principal.getName());
+		return new ResponseEntity<TransferSuccessResponse>(transferSuccess, HttpStatus.OK);
 	}
 	
 	@GetMapping("/transfer-charges")

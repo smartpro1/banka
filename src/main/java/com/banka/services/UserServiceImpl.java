@@ -274,27 +274,28 @@ public class UserServiceImpl implements UserService{
 		String description = transferRequestPayload.getDescription();
 		Transaction senderTransaction = new Transaction(TransactionType.DEBIT.name(), totalDebit, beneficiary.getAccountNumber(), 
 				                                          description,null, sender, transactionId);
-		addTransaction(sender, senderTransaction);
-//		List<Transaction> senderTransactions = sender.getTransactions();
-//		senderTransactions.add(senderTransaction);
-//		sender.setTransactions(senderTransactions);
-//		userRepo.save(sender);
+//		addTransaction(sender, senderTransaction);
+		List<Transaction> senderTransactions = sender.getTransactions();
+		senderTransactions.add(senderTransaction);
+		sender.setTransactions(senderTransactions);
+		//userRepo.save(sender);
 		
 	//	sender.setTransactions(senderTransactions);
 		Transaction beneficiaryTransaction = new Transaction(TransactionType.CREDIT.name(), amountToTransfer, senderUserProfile.getAccountNumber(),
 				                                description, null, beneficiary.getUser(), transactionId);
 		
 		User beneficiaryUser = beneficiary.getUser();
-		addTransaction(beneficiaryUser, beneficiaryTransaction);
-//		List<Transaction> beneficiaryUserTransactions = beneficiaryUser.getTransactions();
-//		beneficiaryUserTransactions.add(beneficiaryTransaction);
-//		userRepo.save(beneficiaryUser);
+	//	addTransaction(beneficiaryUser, beneficiaryTransaction);
+		List<Transaction> beneficiaryUserTransactions = beneficiaryUser.getTransactions();
+		beneficiaryUserTransactions.add(beneficiaryTransaction);
+		//userRepo.save(beneficiaryUser);
 		
 		// create transfer response object and return it.
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm a");
 		String transactionTime = LocalDateTime.now().format(dtf);
 		TransferSuccessResponse transferResponse = new TransferSuccessResponse(
-				         sender.getFullname(), beneficiaryUser.getFullname(), amountToTransfer.toString(), transactionId, transactionTime, description);
+				         sender.getFullname(), beneficiaryUser.getFullname(), amountToTransfer.toString(), transactionId, transactionTime,
+				         description,beneficiary.getAccountNumber(), senderUserProfile.getAccountBalance().toString());
 		
 		return transferResponse;
 	}

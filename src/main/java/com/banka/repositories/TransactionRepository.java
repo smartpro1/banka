@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 
 import com.banka.model.CustomUserDetails;
 import com.banka.model.Transaction;
+import com.banka.model.User;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long>{
@@ -14,6 +15,6 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>{
 
 	List<Transaction> getByStaffInvolved(String staffUsername);
 
-	List<Transaction> getByUser(CustomUserDetails user);
+	List<Transaction> getByUser(User uzer);
 
 }
