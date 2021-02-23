@@ -4,6 +4,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.repository.query.Param;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mail.SimpleMailMessage;
@@ -30,6 +31,7 @@ import com.banka.payloads.JwtLoginSuccessResponse;
 import com.banka.payloads.MakeDepositPayload;
 import com.banka.payloads.PasswordResetRequest;
 import com.banka.payloads.RegistrationSuccessResponse;
+import com.banka.payloads.TransactionDto;
 import com.banka.payloads.TransferRequestPayload;
 import com.banka.payloads.TransferSuccessResponse;
 import com.banka.payloads.UserLoginPayload;
@@ -249,10 +251,16 @@ public class UserController {
 	}
 	
 
-	@GetMapping("/transaction-details")
-	public ResponseEntity<List<Transaction>> getTransactionDetails(String transactionId) {
+	@GetMapping("/transaction-details/{transactionId}")
+	public ResponseEntity<List<Transaction>> getTransactionDetails(@PathVariable String transactionId) {
 		List<Transaction> transactions = userService.getTransactionByTransId(transactionId);
 		return new ResponseEntity<List<Transaction>>(transactions, HttpStatus.OK);
+	}
+	
+	@GetMapping("/user-transactions/{userId}")
+	public ResponseEntity<List<TransactionDto>>  getTransactionsByUserId(@PathVariable String userId){
+		List<TransactionDto> transactions = userService.getTransactionsByUserId(userId);
+		return new ResponseEntity<List<TransactionDto>>(transactions, HttpStatus.OK);
 	}
 
 	

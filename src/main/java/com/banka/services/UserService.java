@@ -15,6 +15,7 @@ import com.banka.payloads.ChangePinRequest;
 import com.banka.payloads.MakeDepositPayload;
 import com.banka.payloads.PasswordResetRequest;
 import com.banka.payloads.RegistrationSuccessResponse;
+import com.banka.payloads.TransactionDto;
 import com.banka.payloads.TransferRequestPayload;
 import com.banka.payloads.TransferSuccessResponse;
 import com.banka.payloads.UserRegPayload;
@@ -55,4 +56,6 @@ AccountInfoResponse getAccountInfo(String username);
 
 List<UserProfile> getDummyAccounts();
 List<Transaction> getTransactionByTransId(String transactionId);
+
+List<TransactionDto> getTransactionsByUserId(String userId);
 }

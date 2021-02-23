@@ -1,5 +1,10 @@
 package com.banka.payloads;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.banka.model.Transaction;
+
 public class TransferSuccessResponse {
 
 	private String sender;
@@ -10,6 +15,7 @@ public class TransferSuccessResponse {
 	private String description;
 	private String benfAcctNum;
 	private String senderAcctBal;
+	List<Transaction> transactions = new ArrayList<>();
 	
 	public TransferSuccessResponse() {
 		
@@ -18,7 +24,7 @@ public class TransferSuccessResponse {
 	
 
 	public TransferSuccessResponse(String sender, String beneficiary, String amount, String transactionId,
-			String timeOfTransaction, String description, String benfAcctNum, String senderAcctBal) {
+			String timeOfTransaction, String description, String benfAcctNum, String senderAcctBal, List<Transaction> transactions) {
 		this.sender = sender;
 		this.beneficiary = beneficiary;
 		this.amount = amount;
@@ -27,6 +33,7 @@ public class TransferSuccessResponse {
 		this.description = description;
 		this.benfAcctNum = benfAcctNum;
 		this.senderAcctBal =  senderAcctBal;
+		this.transactions = transactions;
 	}
 
 
@@ -71,6 +78,12 @@ public class TransferSuccessResponse {
 
 	public String getSenderAcctBal() {
 		return senderAcctBal;
+	}
+
+
+
+	public List<Transaction> getTransactions() {
+		return transactions;
 	}
 	
 	

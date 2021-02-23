@@ -140,5 +140,16 @@ public class Transaction {
 	protected void onCreate() {
 		this.created_At = LocalDateTime.now();
 	}
+
+
+	@Override
+	public String toString() {
+		return "Transaction [id=" + id + ", transactionType=" + transactionType + ", amount=" + amount
+				+ ", accountNumberInvolved=" + accountNumberInvolved + ", description=" + description
+				+ ", staffInvolved=" + staffInvolved + ", transactionId=" + transactionId + ", created_At=" + created_At
+				+ ", user=" + user + "]";
+	}
+	
+	
 	
 }

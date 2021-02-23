@@ -10,11 +10,12 @@ import com.banka.model.CustomUserDetails;
 import com.banka.model.Transaction;
 import com.banka.model.User;
 import com.banka.model.UserProfile;
+import com.banka.payloads.TransactionDto;
 import com.banka.repositories.TransactionRepository;
 import com.banka.repositories.UserProfileRepository;
 import com.banka.repositories.TransactionRepository;
 import com.banka.repositories.UserRepository;
-
+import com.banka.services.UserService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -33,6 +34,9 @@ import java.util.Map;
 
 @Component
 public class JwtTokenProvider {
+	
+	@Autowired
+	private UserService userService;
 	
 	@Autowired
 	private UserProfileRepository userProfileRepo;
@@ -54,7 +58,7 @@ public class JwtTokenProvider {
 		UserProfile userProfile = userProfileRepo.getByUser(uzer);
 		String acctNum = userProfile.getAccountNumber();
 		BigDecimal acctBal = userProfile.getAccountBalance();
-		List<Transaction> transactions = transactionRepo.getByUser(uzer);
+		List<TransactionDto> transactions = userService.getTransactionsByUserId(String.valueOf(uzer.getId()));
 		
 		String userId = Long.toString(user.getId());
 		Map<String, Object> claims = new HashMap<>();

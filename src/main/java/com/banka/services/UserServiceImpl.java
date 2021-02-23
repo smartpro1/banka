@@ -1,11 +1,18 @@
 package com.banka.services;
 
 import java.math.BigDecimal;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.TimeZone;
 import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
@@ -43,6 +50,7 @@ import com.banka.payloads.ChangePinRequest;
 import com.banka.payloads.MakeDepositPayload;
 import com.banka.payloads.PasswordResetRequest;
 import com.banka.payloads.RegistrationSuccessResponse;
+import com.banka.payloads.TransactionDto;
 import com.banka.payloads.TransferRequestPayload;
 import com.banka.payloads.TransferSuccessResponse;
 import com.banka.payloads.UserRegPayload;
@@ -291,11 +299,12 @@ public class UserServiceImpl implements UserService{
 		//userRepo.save(beneficiaryUser);
 		
 		// create transfer response object and return it.
+		List<Transaction> senderTransactionz = transactionRepo.getByUserId(sender.getId());
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm a");
 		String transactionTime = LocalDateTime.now().format(dtf);
 		TransferSuccessResponse transferResponse = new TransferSuccessResponse(
 				         sender.getFullname(), beneficiaryUser.getFullname(), amountToTransfer.toString(), transactionId, transactionTime,
-				         description,beneficiary.getAccountNumber(), senderUserProfile.getAccountBalance().toString());
+				         description,beneficiary.getAccountNumber(), senderUserProfile.getAccountBalance().toString(), senderTransactionz );
 		
 		return transferResponse;
 	}
@@ -704,7 +713,42 @@ public class UserServiceImpl implements UserService{
 		transactionRepo.save(bonusTransaction);
 	}
 
+	private String capitalize(String str)
+	{
+	    if(str == null) return str;
+	    return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
+	}
+	
+	@Override
+	public List<TransactionDto> getTransactionsByUserId(String userId) {
+		Long id = null;
+		try {
+			id = Long.parseLong(userId);
+		} catch (Exception ex) {
+			throw new InvalidCredentialException("id must be digits");
+		}
+		
+		List<Transaction> transactionz = transactionRepo.getByUserId(id);
+		List<TransactionDto> transactions = new ArrayList<>();
+		for (Transaction trans : transactionz) {
+
+			ZonedDateTime ldt = trans.getCreated_At().atZone(ZoneOffset.UTC);
+			String meridiem = ldt.getHour() > 12 ? "PM" : "AM";
+			String appendZero = ldt.getMinute() > 9 ? "" : "0";
+			String created_At = String.format("%s, %s %d %d %d:%s%d %s", capitalize(ldt.getDayOfWeek().toString()), capitalize(ldt.getMonth().toString()), ldt.getDayOfMonth(),
+					                               ldt.getYear(), ldt.getHour()%12,appendZero, ldt.getMinute(), meridiem);
+			System.out.println(created_At);
+			TransactionDto transaction = new TransactionDto(trans.getTransactionType(), trans.getAmount(), trans.getAccountNumberInvolved(),
+					                       trans.getDescription(), trans.getStaffInvolved(), trans.getTransactionId(), created_At);
+			
+			System.out.println(transaction);
+			transactions.add(transaction);
+
+		}
+		return transactions;
+	
 
 
+	}
 
 }
