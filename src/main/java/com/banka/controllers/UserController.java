@@ -38,7 +38,6 @@ import com.banka.payloads.UserLoginPayload;
 import com.banka.payloads.UserRegPayload;
 import com.banka.payloads.WithdrawalRequestPayload;
 import com.banka.security.JwtTokenProvider;
-import com.banka.services.EmailService;
 import com.banka.services.FieldsValidationService;
 import com.banka.services.UserService;
 import com.banka.validators.AppValidator;
@@ -216,8 +215,8 @@ public class UserController {
 	
 	@PostMapping("activate-cashier/{username}")
 	public ResponseEntity<User> activateCashier(@PathVariable String username) {
-		User deactivatedUser = userService.activateCashier(username);
-		return new ResponseEntity<User>(deactivatedUser, HttpStatus.OK);
+		User activatedUser = userService.activateCashier(username);
+		return new ResponseEntity<User>(activatedUser, HttpStatus.OK);
 		}
 	
 	

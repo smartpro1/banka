@@ -183,6 +183,10 @@ public class UserServiceImpl implements UserService{
 			throw new InvalidCredentialException("invalid credential supplied"); 
 		}
 		
+		if(!user.getIsActive().equalsIgnoreCase(ACTIVE.name())) {
+			informUser(user.getIsActive());
+		}
+		
 //		UserProfile userProfile = userProfileRepo.getUserProfileByUserId(user.getId());
 //		if(userProfile == null) {
 //			throw new InvalidCredentialException("invalid credential supplied"); 
@@ -411,7 +415,7 @@ public class UserServiceImpl implements UserService{
 	private void sendMailForAccountActivation(User newUser, String transferPin, HttpServletRequest httpServletRequest, String generatedToken) {
 		String appUrl = httpServletRequest.getScheme() + "://" + httpServletRequest.getServerName();
 		// Email message
-		try {
+		
 		SimpleMailMessage mailForActivation = new SimpleMailMessage();
 		mailForActivation.setFrom("smartpromise380@gmail.com");
 		mailForActivation.setTo(newUser.getEmail());
@@ -421,6 +425,7 @@ public class UserServiceImpl implements UserService{
 				+ " confirm your registration by clicking the link below:" +
 				"\n" + appUrl + ":3000/confirm-registration?token=" + generatedToken;
 		mailForActivation.setText(message);
+		try {
 		emailService.sendEmail(mailForActivation);
 		} catch(Exception ex) {
 			logger.error("there was an error: " + ex);
@@ -622,7 +627,15 @@ public class UserServiceImpl implements UserService{
 		String message = "Hi " + user.getFullname() + ",\n Someone requested to reset your password, if it wasn't you kindly ignore this"
 				+ " message, your account is safe with us.\n If it was you kindly click the link below:\n" + appUrl + ":3000/password-reset?token=" + generatedToken;
 		passwordResetEmail.setText(message);
+		try {
 		emailService.sendEmail(passwordResetEmail);
+		} catch (Exception ex) {
+			logger.error("there was an error: " + ex);
+			ex.printStackTrace();
+			throw new EmailSendingException("Ops! It's not you it's us! An error occurred when sending password reset mail to " +passwordResetRequest.getEmail() +
+					", it's either you supplied a non-functional mail or the server is down. Please try "
+					+ "again later.");	
+		}
 
 		
 	}
@@ -741,7 +754,6 @@ public class UserServiceImpl implements UserService{
 			TransactionDto transaction = new TransactionDto(trans.getTransactionType(), trans.getAmount(), trans.getAccountNumberInvolved(),
 					                       trans.getDescription(), trans.getStaffInvolved(), trans.getTransactionId(), created_At);
 			
-			System.out.println(transaction);
 			transactions.add(transaction);
 
 		}
