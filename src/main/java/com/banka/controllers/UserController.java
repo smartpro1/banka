@@ -148,7 +148,6 @@ public class UserController {
 	
 	@PostMapping("/change-pin")
 	public ResponseEntity<?> changePin(@Valid @RequestBody ChangePinRequest changePinRequest , BindingResult result, Principal principal) {
-		System.out.println(changePinRequest);
 		// compare newPin with confirmNewPin
 		changePinValidator.validate(changePinRequest, result);
 		
