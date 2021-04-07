@@ -31,4 +31,8 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long>{
 
 	UserProfile getByPhoneNumber(String string);
 
+	boolean existsByAccountNumber(String accountNumber);
+
+	
+
 }

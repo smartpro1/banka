@@ -7,12 +7,16 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import com.banka.model.Transaction;
 import com.banka.model.User;
 import com.banka.model.UserProfile;
 import com.banka.payloads.AccountInfoResponse;
 import com.banka.payloads.ChangePinRequest;
 import com.banka.payloads.MakeDepositPayload;
+import com.banka.payloads.Operation;
 import com.banka.payloads.PasswordResetRequest;
 import com.banka.payloads.RegistrationSuccessResponse;
 import com.banka.payloads.TransactionDto;
@@ -58,4 +62,10 @@ List<UserProfile> getDummyAccounts();
 List<Transaction> getTransactionByTransId(String transactionId);
 
 List<TransactionDto> getTransactionsByUserId(String userId);
+
+String userStatusOperation(Operation operation, String username);
+
+
+
+Page<Transaction> findTransactionsByDateRange(String start, String end, Pageable pageable);
 }

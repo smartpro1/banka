@@ -7,6 +7,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 import com.banka.model.CustomUserDetails;
+import com.banka.model.Role;
 import com.banka.model.Transaction;
 import com.banka.model.User;
 import com.banka.model.UserProfile;
@@ -27,10 +28,12 @@ import io.jsonwebtoken.UnsupportedJwtException;
 import static com.banka.security.SecurityConstants.*;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 public class JwtTokenProvider {
@@ -56,9 +59,24 @@ public class JwtTokenProvider {
 		Date expiryDate = new Date(now.getTime() + EXPIRATION_TIME);
 		User uzer = userRepo.getByUsername(user.getUsername());
 		UserProfile userProfile = userProfileRepo.getByUser(uzer);
-		String acctNum = userProfile.getAccountNumber();
-		BigDecimal acctBal = userProfile.getAccountBalance();
+		
+		String acctNum = "";
+		BigDecimal acctBal = null;
+		
+		if(userProfile != null) {
+		  acctNum = userProfile.getAccountNumber();
+		  acctBal = userProfile.getAccountBalance();
+		} 
+		
+		
+		
 		List<TransactionDto> transactions = userService.getTransactionsByUserId(String.valueOf(uzer.getId()));
+		Set<Role> rolez = uzer.getRoles();
+		List<String> roles = new ArrayList<>();
+		
+		for (Role role: rolez) {
+			roles.add(role.getName().name());
+		}
 		
 		String userId = Long.toString(user.getId());
 		Map<String, Object> claims = new HashMap<>();
@@ -69,7 +87,7 @@ public class JwtTokenProvider {
 		claims.put("acctNum", acctNum);
 		claims.put("acctBal", acctBal);
 		claims.put("transactions", transactions);
-		
+		claims.put("roles", roles);
 		
 		String jws = Jwts.builder()
 				.setSubject(userId)

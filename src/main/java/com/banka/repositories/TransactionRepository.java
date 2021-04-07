@@ -2,6 +2,8 @@ package com.banka.repositories;
 
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,5 +24,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>{
 	
 	@Query(value="SELECT * FROM transaction WHERE user_id = :userId ORDER BY created_at DESC LIMIT 5 ", nativeQuery=true)
 	List<Transaction> getByUserId(@Param("userId") Long userId);
+
+	@Query(value="SELECT * FROM transaction WHERE created_at BETWEEN ?1 AND ?2", nativeQuery=true)
+	Page<Transaction> findByDateRange(String start, String endDayStr, Pageable pageable);
 
 }

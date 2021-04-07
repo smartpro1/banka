@@ -3,27 +3,28 @@ package com.banka.payloads;
 
 public class WithdrawalRequestPayload {
 	
-	private String accountNumber;
-	private String amountToWithdraw;
-	private String staffPin;
+	private String acctNum;
+	private String amount;
+	private String pin;
 	
-	public String getAccountNumber() {
-		return accountNumber;
+	public String getAcctNum() {
+		return acctNum;
 	}
-	public void setAccountNumber(String accountNumber) {
-		this.accountNumber = accountNumber;
+	public void setAcctNum(String acctNum) {
+		this.acctNum = acctNum;
 	}
-	public String getAmountToWithdraw() {
-		return amountToWithdraw;
+	public String getAmount() {
+		return amount;
 	}
-	public void setAmountToWithdraw(String amountToWithdraw) {
-		this.amountToWithdraw = amountToWithdraw;
+	public void setAmount(String amount) {
+		this.amount = amount;
 	}
-	public String getStaffPin() {
-		return staffPin;
+	
+	public String getPin() {
+		return pin;
 	}
-	public void setStaffPin(String staffPin) {
-		this.staffPin = staffPin;
+	public void setPin(String pin) {
+		this.pin = pin;
 	}
 	
 	

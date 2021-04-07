@@ -197,12 +197,16 @@ public class User {
 	}
 
 
-//	@Override
-//	public String toString() {
-//		return "User [id=" + id + ", fullname=" + fullname + ", sex=" + sex + ", email=" + email + ", username="
-//				+ username + ", password=" + password + ", isActive=" + isActive + ", created_At=" + created_At
-//				+ ", updated_At=" + updated_At + ", roles=" + roles + ", transactions=" + transactions + "]";
-//	}
+	@Override
+	public String toString() {
+		return "User [id=" + id + ", fullname=" + fullname + ", sex=" + sex + ", email=" + email + ", username="
+				+ username + ", password=" + password + ", isActive=" + isActive + ", transferPin=" + transferPin
+				+ ", created_At=" + created_At + ", updated_At=" + updated_At + ", roles=" + roles + ", transactions="
+				+ transactions + "]";
+	}
+
+
+	
 
 
 	

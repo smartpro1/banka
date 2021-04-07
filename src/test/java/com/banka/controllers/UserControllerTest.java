@@ -2,6 +2,7 @@ package com.banka.controllers;
 
 import static com.banka.model.RoleName.ROLE_CASHIER;
 import static com.banka.model.RoleName.ROLE_USER;
+import static com.banka.model.UserStatus.DEFAULT_PIN_NOT_CHANGED;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -119,7 +120,8 @@ class UserControllerTest {
 		Object mockedUserEntity = mockedUser.getBody();
 		assertTrue(mockedUserEntity.equals(user));
 		assertTrue(user.getRoles().contains(role));
-		assertEquals("REGISTRATION_NOT_CONFIRMED",user.getIsActive());
+		assertTrue("REGISTRATION_NOT_CONFIRMED".equals(user.getIsActive()));
+		//assertEquals("REGISTRATION_NOT_CONFIRMED",user.getIsActive());
 	}
 	
 	@Test

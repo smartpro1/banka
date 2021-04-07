@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.query.Param;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -139,7 +138,9 @@ public class UserController {
 		changePasswordValidator.validate(changePasswordRequest, result);
 		
 		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
-		if(errorMap != null) return errorMap;
+		if(errorMap != null) {
+			return errorMap;
+		}
         userService.resetPassword(changePasswordRequest.getPassword(), changePasswordRequest.getToken());
         
         return new ResponseEntity<String>("password reset successful", HttpStatus.OK);
@@ -200,26 +201,26 @@ public class UserController {
 		return new ResponseEntity<User>(deactivatedUser, HttpStatus.OK);
 		}
 	
-	@PostMapping("activate-user/{username}")
+	@PutMapping("activate-user/{username}")
 	public ResponseEntity<User> activateUser(@PathVariable String username) {
 		User activatedUser = userService.activateUser(username);
 		return new ResponseEntity<User>(activatedUser, HttpStatus.OK);
 		}
 	
-	@PostMapping("deactivate-cashier/{username}")
+	@PutMapping("deactivate-cashier/{username}")
 	public ResponseEntity<User> deactivateCashier(@PathVariable String username) {
 		User deactivatedUser = userService.deactivateCashier(username);
 		return new ResponseEntity<User>(deactivatedUser, HttpStatus.OK);
 		}
 	
-	@PostMapping("activate-cashier/{username}")
+	@PutMapping("activate-cashier/{username}")
 	public ResponseEntity<User> activateCashier(@PathVariable String username) {
 		User activatedUser = userService.activateCashier(username);
 		return new ResponseEntity<User>(activatedUser, HttpStatus.OK);
 		}
 	
 	
-	@PostMapping("get-user-details/{usernameOrEmail}")
+	@GetMapping("get-user-details/{usernameOrEmail}")
 	public ResponseEntity<?> getUserByUsernameOrEmail(@PathVariable String usernameOrEmail){
 		User userDetails = userService.getUserByUsernameOrEmail(usernameOrEmail);
 		return new ResponseEntity<User>(userDetails, HttpStatus.OK);

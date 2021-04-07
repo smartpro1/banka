@@ -3,43 +3,38 @@ package com.banka.payloads;
 
 public class MakeDepositPayload {
 	
-	private String accountNumber;
-	private String depositAmount;
-	private String nameOfDepositor;
-	private String description;
-	private String staffPin;
+	private String acctNum;
+	private String amount;
+	private String depositor;
+	private String pin;
 	
-	public String getAccountNumber() {
-		return accountNumber;
+	public String getAcctNum() {
+		return acctNum;
 	}
-	public void setAccountNumber(String accountNumber) {
-		this.accountNumber = accountNumber;
+	public void setAcctNum(String acctNum) {
+		this.acctNum = acctNum;
+	}
+	public String getAmount() {
+		return amount;
+	}
+	public void setAmount(String amount) {
+		this.amount = amount;
+	}
+	public String getDepositor() {
+		return depositor;
+	}
+	public void setDepositor(String depositor) {
+		this.depositor = depositor;
+	}
+	public String getPin() {
+		return pin;
+	}
+	public void setPin(String pin) {
+		this.pin = pin;
 	}
 	
-	public String getDepositAmount() {
-		return depositAmount;
-	}
-	public void setDepositAmount(String depositAmount) {
-		this.depositAmount = depositAmount;
-	}
-	public String getNameOfDepositor() {
-		return nameOfDepositor;
-	}
-	public void setNameOfDepositor(String nameOfDepositor) {
-		this.nameOfDepositor = nameOfDepositor;
-	}
-	public String getDescription() {
-		return description;
-	}
-	public void setDescription(String description) {
-		this.description = description;
-	}
-	public String getStaffPin() {
-		return staffPin;
-	}
-	public void setStaffPin(String staffPin) {
-		this.staffPin = staffPin;
-	}
+	
+	
 	
 	
 	

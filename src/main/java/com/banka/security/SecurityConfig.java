@@ -8,6 +8,7 @@ import org.springframework.security.config.BeanIds;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -16,7 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import com.banka.services.CustomUserDetailsService;
 
-//import static com.banka.security.SecurityConstants.USER_URLS;
+import static com.banka.security.SecurityConstants.*;
 
 @Configuration
 @EnableWebSecurity
@@ -52,12 +53,15 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 	
     @Override
     protected void configure(HttpSecurity http) throws Exception{
-    	
     	http.cors().and().csrf().disable()
     	    .exceptionHandling().authenticationEntryPoint(securityAuthenticationEntryPoint)
     	    .and()
     	    .sessionManagement()
     	      .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+    	      .and()
+    	      .headers().frameOptions().disable()
+    	      .and()
+    	      .headers().frameOptions().sameOrigin() // To enable H2 database
     	      .and()
     	      .authorizeRequests()
     	      .antMatchers(
@@ -70,14 +74,25 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 		    		     "/**/*.css",
 		    		     "/**/*.js"
     	    		  ).permitAll()
-//    	      .antMatchers(USER_URLS).permitAll()
-    	    .antMatchers("/api/v1/users/signup","/api/v1/users/login",
-    	    		      "/api/v1/users/forgot-password", "/api/v1/users/reset-password", "/api/v1/users/confirm-registration",
-                        "/api/v1/users/user-transactions/{userId}").permitAll()
+    	      .antMatchers("/h2-console/**").permitAll()
+    	      .antMatchers("/api/v1/users/signup","/api/v1/users/login",
+    	    		      "/api/v1/users/forgot-password", "/api/v1/users/reset-password", "/api/v1/users/confirm-registration"
+    	    		         ).permitAll()
+    	       .antMatchers("/api/v1/users/transfer-funds").hasAuthority("ROLE_USER")
+    	       .antMatchers("/api/v1/users/user-transactions/{userId}",  "/api/v1/admins/track-transactions", "/api/v1/users/withdraw-funds",
+    	    		   "/api/v1/users/deposit-funds")
+    	          .hasAnyAuthority("ROLE_CASHIER", "ROLE_ADMIN")
     	       .anyRequest()
-    	       .authenticated();
+    	      .authenticated();
     	
     	 http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+    }
+    
+    @Override
+    public void configure(WebSecurity web) throws Exception {
+        web
+            .ignoring()
+            .antMatchers("/h2-console/**");
     }
 	
    

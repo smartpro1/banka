@@ -1,8 +1,10 @@
 package com.banka.services;
 
 import java.math.BigDecimal;
+import java.security.Principal;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -23,6 +25,9 @@ import org.slf4j.LoggerFactory;
 //import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,9 +50,11 @@ import com.banka.model.Transaction;
 import com.banka.model.TransactionType;
 import com.banka.model.User;
 import com.banka.model.UserProfile;
+import com.banka.model.UserStatus;
 import com.banka.payloads.AccountInfoResponse;
 import com.banka.payloads.ChangePinRequest;
 import com.banka.payloads.MakeDepositPayload;
+import com.banka.payloads.Operation;
 import com.banka.payloads.PasswordResetRequest;
 import com.banka.payloads.RegistrationSuccessResponse;
 import com.banka.payloads.TransactionDto;
@@ -182,8 +189,7 @@ public class UserServiceImpl implements UserService{
 		if(user == null) {
 			throw new InvalidCredentialException("invalid credential supplied"); 
 		}
-		
-		if(!user.getIsActive().equalsIgnoreCase(ACTIVE.name())) {
+		if(!(user.getIsActive().equalsIgnoreCase(ACTIVE.name()) || user.getIsActive().equalsIgnoreCase(DEFAULT_PIN_NOT_CHANGED.name()))) {
 			informUser(user.getIsActive());
 		}
 		
@@ -247,11 +253,11 @@ public class UserServiceImpl implements UserService{
 		comparePins(transferRequestPayload.getPin(), sender.getTransferPin());
 
 		
-		BigDecimal transferCharges = TRANSFER_CHARGE; 
+		//BigDecimal transferCharges = TRANSFER_CHARGE; 
 		UserProfile senderUserProfile = userProfileRepo.getUserProfileByUserId(sender.getId());
 		BigDecimal senderAccountBalance = senderUserProfile.getAccountBalance();
 		BigDecimal amountToTransfer = new BigDecimal(transferRequestPayload.getAmount());
-		BigDecimal totalDebit = transferCharges.add(amountToTransfer);
+		BigDecimal totalDebit = TRANSFER_CHARGE.add(amountToTransfer);
 		
 		if (senderUserProfile.getAccountNumber().equals(transferRequestPayload.getBenfAcctNum())) {
 			throw new InvalidCredentialException("You cannot transfer money to yourself.");
@@ -315,20 +321,21 @@ public class UserServiceImpl implements UserService{
 	
 	
 	@Override
+	@PreAuthorize("hasAnyAuthority('ROLE_CASHIER', 'ROLE_ADMIN')")
 	public void makeWithdrawal(@Valid WithdrawalRequestPayload withdrawalRequestPayload, String staffUsername) {
-		verifyBeneficiaryAccountNumber(withdrawalRequestPayload.getAccountNumber());
-		String withdrawalAmt = verifyTransferFund(withdrawalRequestPayload.getAmountToWithdraw());  
-		withdrawalRequestPayload.setAmountToWithdraw(withdrawalAmt);
+		verifyBeneficiaryAccountNumber(withdrawalRequestPayload.getAcctNum());
+		String withdrawalAmt = verifyTransferFund(withdrawalRequestPayload.getAmount());  
+		withdrawalRequestPayload.setAmount(withdrawalAmt);
 		User staff = userRepo.getByUsername(staffUsername);
 		
 		if (staff == null) {
 			throw new InvalidCredentialException("invalid staff");
 		}
 		
-		comparePins(withdrawalRequestPayload.getStaffPin(), staff.getTransferPin());
+		comparePins(withdrawalRequestPayload.getPin(), staff.getTransferPin());
 		
 		BigDecimal minimumWithdrawal = MINIMUM_WITHDRAWAL;
-	    UserProfile accountOwner = userProfileRepo.getByAccountNumber(withdrawalRequestPayload.getAccountNumber());
+	    UserProfile accountOwner = userProfileRepo.getByAccountNumber(withdrawalRequestPayload.getAcctNum());
 		
 		if(accountOwner == null) {
 			throw new InvalidCredentialException("this account number does not exist");
@@ -336,8 +343,9 @@ public class UserServiceImpl implements UserService{
 		
 		BigDecimal withdrawalCharges = WITHDRAWAL_CHARGE; 
 		BigDecimal ownerAccountBalance = accountOwner.getAccountBalance();
-		BigDecimal amountToTransfer = new BigDecimal(withdrawalRequestPayload.getAmountToWithdraw());
+		BigDecimal amountToTransfer = new BigDecimal(withdrawalRequestPayload.getAmount());
 		BigDecimal totalDebit = withdrawalCharges.add(amountToTransfer);
+		
 		
 		if(amountToTransfer.compareTo(minimumWithdrawal) < 0) {
 			 throw new InsufficientFundException("minimum withdrawal is " + minimumWithdrawal);
@@ -347,6 +355,7 @@ public class UserServiceImpl implements UserService{
 			 throw new InsufficientFundException("insufficient fund");
 		}
 		
+		
 		BigDecimal newAcctBal = ownerAccountBalance.subtract(totalDebit);
 		accountOwner.setAccountBalance(newAcctBal);
 		userProfileRepo.save(accountOwner);
@@ -354,7 +363,7 @@ public class UserServiceImpl implements UserService{
 		// Create transaction
 		String transactionId = generateTransactionId();
 		String description = "withdrawal";
-		Transaction withdrawalTransaction = new Transaction(TransactionType.DEBIT.name(), totalDebit, withdrawalRequestPayload.getAccountNumber(), 
+		Transaction withdrawalTransaction = new Transaction(TransactionType.DEBIT.name(), totalDebit, withdrawalRequestPayload.getAcctNum(), 
 				                                          description,staffUsername,accountOwner.getUser(), transactionId);
 		addTransaction(accountOwner.getUser(), withdrawalTransaction);
 	
@@ -362,12 +371,13 @@ public class UserServiceImpl implements UserService{
 
 
 	@Override
+	@PreAuthorize("hasAnyAuthority('ROLE_CASHIER', 'ROLE_ADMIN')")
 	public void makeDeposit(MakeDepositPayload makeDepositPayload, String staffUsername) {
-		verifyBeneficiaryAccountNumber(makeDepositPayload.getAccountNumber());
-		verifyTransferFund(makeDepositPayload.getDepositAmount());
+		verifyBeneficiaryAccountNumber(makeDepositPayload.getAcctNum());
+		verifyTransferFund(makeDepositPayload.getAmount());
 		
-		BigDecimal minimumDeposit = new BigDecimal("100");
-		UserProfile beneficiary = userProfileRepo.getByAccountNumber(makeDepositPayload.getAccountNumber());
+		//BigDecimal minimumDeposit = new BigDecimal("100");
+		UserProfile beneficiary = userProfileRepo.getByAccountNumber(makeDepositPayload.getAcctNum());
 		
 		if(beneficiary == null) {
 			throw new InvalidCredentialException("beneficiary's account number does not exist");
@@ -379,13 +389,13 @@ public class UserServiceImpl implements UserService{
 			throw new InvalidCredentialException("invalid staff");
 		}
 		
-		comparePins(makeDepositPayload.getStaffPin(), staff.getTransferPin());
+		comparePins(makeDepositPayload.getPin(), staff.getTransferPin());
 		
-		BigDecimal amountToDeposit = new BigDecimal(makeDepositPayload.getDepositAmount());
+		BigDecimal amountToDeposit = new BigDecimal(makeDepositPayload.getAmount());
 		
-		if(amountToDeposit.compareTo(minimumDeposit) < 0) {
-			 throw new InsufficientFundException("minimum deposit is " + minimumDeposit);
-		}
+//		if(amountToDeposit.compareTo(minimumDeposit) < 0) {
+//			 throw new InsufficientFundException("minimum deposit is " + minimumDeposit);
+//		}
 		
 		BigDecimal newAccountBal = beneficiary.getAccountBalance().add(amountToDeposit);
 		beneficiary.setAccountBalance(newAccountBal);
@@ -393,10 +403,46 @@ public class UserServiceImpl implements UserService{
 		
 		String transactionId = generateTransactionId();
 		String description = "deposit";
-		Transaction depositTransaction = new Transaction(TransactionType.CREDIT.name(), amountToDeposit, makeDepositPayload.getAccountNumber(), 
+		Transaction depositTransaction = new Transaction(TransactionType.CREDIT.name(), amountToDeposit, makeDepositPayload.getAcctNum(), 
 				                                          description,staffUsername, beneficiary.getUser(), transactionId);
 		addTransaction(beneficiary.getUser(), depositTransaction);
 		
+	}
+	
+	@Override
+	public String userStatusOperation(Operation operation, String username) {
+		 checkIfAccountNumberExists(operation.getAcctNum());
+		 User staff = userRepo.getByUsername(username);
+		// comparePins(operation.getPin(), staff.getTransferPin());
+		 boolean isValidUserStatus = checkIfUserStatusExist(operation.getStatus());
+		
+		 if (!isValidUserStatus) {
+			 throw new InvalidCredentialException("Invalid user status supplied");
+		 }
+		 
+		  // fetch user by account number
+		 User user = userProfileRepo.getByAccountNumber(operation.getAcctNum()).getUser();
+		  // setIsActive to what user admin supplies
+		 user.setIsActive(operation.getStatus());
+		 userRepo.save(user);
+		return "Successful";
+	}
+	
+	@Override
+	public Page<Transaction> findTransactionsByDateRange(String start, String end, Pageable pageable) {
+		if(start.length() < 1 || end.length() < 1) {
+			throw new InvalidCredentialException("Start date or end date cannot be empty");
+		}
+		
+		LocalDate startDate = LocalDate.parse(start);
+		LocalDate endDate = LocalDate.parse(end);
+		if(startDate.isAfter(endDate)) {
+			throw new InvalidCredentialException("Start date cannot be greater than end date");
+		}
+		
+		String endDayStr = endDate.plusDays(1).toString();
+		Page<Transaction> transactions = transactionRepo.findByDateRange(start, endDayStr, pageable);
+		return transactions;
 	}
 	
 	private void comparePins(String suppliedCurrentPin, String currentPin) {
@@ -461,6 +507,27 @@ public class UserServiceImpl implements UserService{
 			throw new PhoneNumberAlreadyInUseException("phone number already exists, please choose another.");
 		}
 		
+	}
+	
+	
+	private boolean checkIfUserStatusExist(String status) {
+		boolean isUserStatus = false;
+		for (UserStatus userStatus : UserStatus.values()) {
+			if (userStatus.name().equalsIgnoreCase(status)) {
+				isUserStatus = true;
+				return isUserStatus;
+			}
+		}
+		
+		return isUserStatus;
+		
+	}
+	
+	
+	private void checkIfAccountNumberExists(String accountNumber) {
+		if(!userProfileRepo.existsByAccountNumber(accountNumber)) {
+			throw new InvalidCredentialException("Invalid account number");
+		}
 	}
 	
 	private Role assignRole(UserRegPayload userRegPayload) {
@@ -750,7 +817,7 @@ public class UserServiceImpl implements UserService{
 			String appendZero = ldt.getMinute() > 9 ? "" : "0";
 			String created_At = String.format("%s, %s %d %d %d:%s%d %s", capitalize(ldt.getDayOfWeek().toString()), capitalize(ldt.getMonth().toString()), ldt.getDayOfMonth(),
 					                               ldt.getYear(), ldt.getHour()%12,appendZero, ldt.getMinute(), meridiem);
-			System.out.println(created_At);
+		
 			TransactionDto transaction = new TransactionDto(trans.getTransactionType(), trans.getAmount(), trans.getAccountNumberInvolved(),
 					                       trans.getDescription(), trans.getStaffInvolved(), trans.getTransactionId(), created_At);
 			
@@ -763,4 +830,9 @@ public class UserServiceImpl implements UserService{
 
 	}
 
+
+   
+	
+
+	
 }
