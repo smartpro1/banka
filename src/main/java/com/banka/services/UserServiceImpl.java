@@ -309,7 +309,8 @@ public class UserServiceImpl implements UserService{
 		//userRepo.save(beneficiaryUser);
 		
 		// create transfer response object and return it.
-		List<Transaction> senderTransactionz = transactionRepo.getByUserId(sender.getId());
+//		List<Transaction> senderTransactionz = transactionRepo.getByUserId(sender.getId());
+		List<TransactionDto> senderTransactionz = getTransactionsByUserId(sender.getId().toString());
 		DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm a");
 		String transactionTime = LocalDateTime.now().format(dtf);
 		TransferSuccessResponse transferResponse = new TransferSuccessResponse(
@@ -569,6 +570,17 @@ public class UserServiceImpl implements UserService{
 		     return transferPin;
 	}
 
+	@Override
+	public List<String> getTransactionsForThisMonth(String username) {
+		Long userId = userRepo.getByUsername(username).getId();
+		LocalDateTime ldt = LocalDateTime.now();
+		String year = ldt.getYear()+"-";
+		String month = ldt.getMonthValue()+"";
+		String presentYearAndMonth = year + ""+(ldt.getMonthValue() > 9 ?  month : "0"+month+"%");
+
+	    List<String> createdAtList = transactionRepo.getThisMonthTransactionsDateTime(userId, presentYearAndMonth);
+        return createdAtList;
+	}
 
 	
 	

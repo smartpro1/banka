@@ -15,7 +15,7 @@ public class TransferSuccessResponse {
 	private String description;
 	private String benfAcctNum;
 	private String senderAcctBal;
-	List<Transaction> transactions = new ArrayList<>();
+	List<TransactionDto> transactions = new ArrayList<>();
 	
 	public TransferSuccessResponse() {
 		
@@ -24,7 +24,7 @@ public class TransferSuccessResponse {
 	
 
 	public TransferSuccessResponse(String sender, String beneficiary, String amount, String transactionId,
-			String timeOfTransaction, String description, String benfAcctNum, String senderAcctBal, List<Transaction> transactions) {
+			String timeOfTransaction, String description, String benfAcctNum, String senderAcctBal, List<TransactionDto> senderTransactionz) {
 		this.sender = sender;
 		this.beneficiary = beneficiary;
 		this.amount = amount;
@@ -33,7 +33,7 @@ public class TransferSuccessResponse {
 		this.description = description;
 		this.benfAcctNum = benfAcctNum;
 		this.senderAcctBal =  senderAcctBal;
-		this.transactions = transactions;
+		this.transactions = senderTransactionz;
 	}
 
 
@@ -82,7 +82,7 @@ public class TransferSuccessResponse {
 
 
 
-	public List<Transaction> getTransactions() {
+	public List<TransactionDto> getTransactions() {
 		return transactions;
 	}
 	

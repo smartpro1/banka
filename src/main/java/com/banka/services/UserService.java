@@ -2,6 +2,7 @@ package com.banka.services;
 
 
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -68,4 +69,6 @@ String userStatusOperation(Operation operation, String username);
 
 
 Page<Transaction> findTransactionsByDateRange(String start, String end, Pageable pageable);
+
+List<String> getTransactionsForThisMonth(String name);
 }

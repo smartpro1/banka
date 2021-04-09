@@ -9,8 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.banka.model.CustomUserDetails;
-import com.banka.model.PinReset;
 import com.banka.model.Transaction;
 import com.banka.model.User;
 
@@ -28,4 +26,10 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long>{
 	@Query(value="SELECT * FROM transaction WHERE created_at BETWEEN ?1 AND ?2", nativeQuery=true)
 	Page<Transaction> findByDateRange(String start, String endDayStr, Pageable pageable);
 
+    
+	@Query(value="SELECT created_At FROM transaction WHERE user_id = :userId  and created_at LIKE :presentYearAndMonth", nativeQuery=true)
+	List<String> getThisMonthTransactionsDateTime(Long userId, String presentYearAndMonth);
+
 }
+
+// , presentYearAndMonth

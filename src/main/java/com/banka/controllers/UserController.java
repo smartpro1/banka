@@ -48,6 +48,7 @@ import static com.banka.utils.Constants.*;
 
 import java.math.BigDecimal;
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 
@@ -261,6 +262,13 @@ public class UserController {
 		List<TransactionDto> transactions = userService.getTransactionsByUserId(userId);
 		return new ResponseEntity<List<TransactionDto>>(transactions, HttpStatus.OK);
 	}
+	
+	@GetMapping("/get-transactions-for-this-month")
+	public ResponseEntity<List<String>> getTransactionsForThisMonth(Principal principal) {
+		List<String> transactions = userService.getTransactionsForThisMonth(principal.getName());
+		return new ResponseEntity<List<String>>(transactions, HttpStatus.OK);
+	}
+	
 
 	
 }
