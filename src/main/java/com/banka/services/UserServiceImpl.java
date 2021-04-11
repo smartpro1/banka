@@ -56,6 +56,7 @@ import com.banka.payloads.ChangePinRequest;
 import com.banka.payloads.MakeDepositPayload;
 import com.banka.payloads.Operation;
 import com.banka.payloads.PasswordResetRequest;
+import com.banka.payloads.PinResetRequest;
 import com.banka.payloads.RegistrationSuccessResponse;
 import com.banka.payloads.TransactionDto;
 import com.banka.payloads.TransferRequestPayload;
@@ -217,6 +218,43 @@ public class UserServiceImpl implements UserService{
 			user.setIsActive(ACTIVE.name());
 			userRepo.save(user);
 		}
+		
+	}
+	
+	@Override
+	public void resetPin(@Valid ChangePinRequest changePinRequest, String username) {
+		User user = userRepo.getByUsername(username);
+		
+		if(user == null) {
+			throw new InvalidCredentialException("invalid credential supplied"); 
+		}
+		if(!(user.getIsActive().equalsIgnoreCase(ACTIVE.name()))) {
+			informUser(user.getIsActive());
+		}
+		
+		PinReset pinReset = pinResetRepo.getByUserId(user.getId());
+		String  encodedToken = pinReset.getResetToken();
+		
+//		UserProfile userProfile = userProfileRepo.getUserProfileByUserId(user.getId());
+//		if(userProfile == null) {
+//			throw new InvalidCredentialException("invalid credential supplied"); 
+//		}
+		
+//		if(!passwordEncoder.matches(changePinRequest.getCurrentPin(), userProfile.getTransferPin())) {
+//			throw new InvalidCredentialException("invalid pin");
+//		}
+		
+		comparePins(changePinRequest.getCurrentPin(), encodedToken);
+		
+		// pin must be 4 to 8 digits
+		if (!changePinRequest.getConfirmNewPin().matches("\\d{4,8}")) {
+			throw new InvalidCredentialException("new pin must be all digits and 4 to 8 digits long");
+		}
+		
+		
+		user.setTransferPin(passwordEncoder.encode(changePinRequest.getNewPin()));
+		userRepo.save(user);
+		pinResetRepo.delete(pinReset);
 		
 	}
 	
@@ -719,11 +757,61 @@ public class UserServiceImpl implements UserService{
 		
 	}
 	
-	private void createPinResetToken(User newUser, String generatedToken) {
-		int validityTimeInSeconds = 60 * 60 * 1/2; // 30 minutes
+	@Override
+	public void processForgotPin(@Valid PinResetRequest pinResetRequest, HttpServletRequest httpServletRequest, String username) {
+        User user = userRepo.getByUsername(username);
+        String loggedInUserEmail = user.getEmail();
+        
+		if(!loggedInUserEmail.equalsIgnoreCase(pinResetRequest.getEmail())) {
+			throw new InvalidCredentialException("sorry, it appears you do not have an account with us.");
+		}
+		
+		String resetPin = generateTransferPin();
+		String encodedResetPin = passwordEncoder.encode(resetPin);
+		
+		PinReset pinReset = pinResetRepo.getByUserId(user.getId());
+		
+		// it's possible a user can send pin reset and resend again without using the first one
+		// so this handles it
+		if(pinReset == null) {
+			  createPinResetToken(user, encodedResetPin);
+		} else {
+			int validityTimeInSeconds = 60 * 30; // 30 minutes
+			LocalDateTime now = LocalDateTime.now();
+			LocalDateTime expiryDate = now.plusSeconds(validityTimeInSeconds);
+			pinReset.setResetToken(encodedResetPin);
+			pinReset.setExpiryDate(expiryDate);
+			pinResetRepo.save(pinReset);
+		}
+		
+		
+		// Email message
+		SimpleMailMessage pinResetEmail = new SimpleMailMessage();
+		pinResetEmail.setFrom("tapp1903@gmail.com");
+		pinResetEmail.setTo(pinResetRequest.getEmail());
+		pinResetEmail.setSubject("Password Reset Request");
+		String message = "Hi " + user.getFullname() + ",\n Someone requested to reset your pin, if it wasn't you kindly ignore this"
+				+ " message, your account is safe with us.\n If it was you then your reset pin is "  + resetPin;
+		pinResetEmail.setText(message);
+		try {
+		emailService.sendEmail(pinResetEmail);
+		} catch (Exception ex) {
+			logger.error("there was an error: " + ex);
+			ex.printStackTrace();
+			throw new EmailSendingException("Ops! It's not you it's us! An error occurred when sending password reset mail to " +pinResetRequest.getEmail() +
+					", it's either you supplied a non-functional mail or the server is down. Please try "
+					+ "again later.");	
+		}
+		
+	
+		
+	}
+	
+	private void createPinResetToken(User user, String generatedToken) {
+		int validityTimeInSeconds = 60 * 30 ; // 30 minutes
 		LocalDateTime now = LocalDateTime.now();
 		LocalDateTime expiryDate = now.plusSeconds(validityTimeInSeconds);
-		PinReset pinReset = new PinReset(generatedToken, expiryDate, newUser);
+		PinReset pinReset = new PinReset(generatedToken, expiryDate, user);
 		pinResetRepo.save(pinReset);
 	}
 	
@@ -842,9 +930,6 @@ public class UserServiceImpl implements UserService{
 
 	}
 
-
-   
-	
 
 	
 }

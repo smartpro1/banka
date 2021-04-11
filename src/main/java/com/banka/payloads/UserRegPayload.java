@@ -1,6 +1,5 @@
 package com.banka.payloads;
 
-import javax.persistence.Column;
 import javax.persistence.Transient;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;

@@ -29,6 +29,7 @@ import com.banka.payloads.ChangePinRequest;
 import com.banka.payloads.JwtLoginSuccessResponse;
 import com.banka.payloads.MakeDepositPayload;
 import com.banka.payloads.PasswordResetRequest;
+import com.banka.payloads.PinResetRequest;
 import com.banka.payloads.RegistrationSuccessResponse;
 import com.banka.payloads.TransactionDto;
 import com.banka.payloads.TransferRequestPayload;
@@ -146,6 +147,33 @@ public class UserController {
         
         return new ResponseEntity<String>("password reset successful", HttpStatus.OK);
 	}
+	
+	@PostMapping("/forgot-pin")
+	public ResponseEntity<?> forgotPin(@Valid @RequestBody PinResetRequest pinResetRequest, BindingResult result,  
+			HttpServletRequest httpServletRequest, Principal principal){
+		
+		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
+		if(errorMap != null) return errorMap;
+		userService.processForgotPin(pinResetRequest, httpServletRequest, principal.getName());
+		
+		return new ResponseEntity<String>("reset password mail sent to " +pinResetRequest.getEmail(), HttpStatus.OK);		
+		
+	}
+	
+	@PostMapping("/reset-pin")
+	public ResponseEntity<?> resetPin(@Valid @RequestBody ChangePinRequest changePinRequest , BindingResult result, Principal principal) {
+		// compare newPin with confirmNewPin
+		changePinValidator.validate(changePinRequest, result);
+		
+		ResponseEntity<?> errorMap = validateFields.fieldsValidationService(result);
+		if(errorMap != null) return errorMap;
+		
+		userService.resetPin(changePinRequest, principal.getName());
+		
+		return new ResponseEntity<String>("reset pin successful", HttpStatus.OK);
+	}
+	
+	
 	
 	
 	@PostMapping("/change-pin")

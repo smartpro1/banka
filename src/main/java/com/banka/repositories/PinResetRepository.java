@@ -16,4 +16,6 @@ public interface PinResetRepository  extends JpaRepository<PinReset, Long>{
     PinReset getPinResetByUserProfileId(Long user_Profile_id);
 
 	PinReset getByResetToken(String confirmationToken);
+
+	PinReset getByUserId(Long id);
 }

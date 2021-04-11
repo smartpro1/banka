@@ -19,6 +19,7 @@ import com.banka.payloads.ChangePinRequest;
 import com.banka.payloads.MakeDepositPayload;
 import com.banka.payloads.Operation;
 import com.banka.payloads.PasswordResetRequest;
+import com.banka.payloads.PinResetRequest;
 import com.banka.payloads.RegistrationSuccessResponse;
 import com.banka.payloads.TransactionDto;
 import com.banka.payloads.TransferRequestPayload;
@@ -71,4 +72,8 @@ String userStatusOperation(Operation operation, String username);
 Page<Transaction> findTransactionsByDateRange(String start, String end, Pageable pageable);
 
 List<String> getTransactionsForThisMonth(String name);
+
+void processForgotPin(@Valid PinResetRequest pinResetRequest, HttpServletRequest httpServletRequest, String username);
+
+void resetPin(@Valid ChangePinRequest changePinRequest, String username);
 }
