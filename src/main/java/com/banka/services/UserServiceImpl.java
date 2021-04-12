@@ -28,6 +28,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -709,6 +712,7 @@ public class UserServiceImpl implements UserService{
     
 	@Override
 	public void processForgotPassword(PasswordResetRequest passwordResetRequest, HttpServletRequest httpServletRequest) {
+		
 		User user = userRepo.getByEmail(passwordResetRequest.getEmail());
 		
 		if(user == null) {
@@ -789,7 +793,7 @@ public class UserServiceImpl implements UserService{
 		SimpleMailMessage pinResetEmail = new SimpleMailMessage();
 		pinResetEmail.setFrom("tapp1903@gmail.com");
 		pinResetEmail.setTo(pinResetRequest.getEmail());
-		pinResetEmail.setSubject("Password Reset Request");
+		pinResetEmail.setSubject("Pin Reset Request");
 		String message = "Hi " + user.getFullname() + ",\n Someone requested to reset your pin, if it wasn't you kindly ignore this"
 				+ " message, your account is safe with us.\n If it was you then your reset pin is "  + resetPin;
 		pinResetEmail.setText(message);

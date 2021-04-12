@@ -3,21 +3,23 @@ package com.banka.payloads;
 import javax.persistence.Transient;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 public class UserRegPayload {
    
 	@NotBlank(message="please enter your fullname")
-	@Size(min = 6, max = 40, message="fullname name must be between 6 - 40 characters long")
+	@Size(min = 4, max = 40, message="fullname name must be between 4 - 40 characters long")
 	private String fullname;
 	@NotBlank(message="please enter sex")
 	private String sex;
+	@NotBlank(message="phone number is required")
+	@Pattern(regexp="0[789]\\d{9}", message="phone number must be of local Nigerian type")  
 	private String phoneNumber;
 	@NotBlank(message="please enter your email")
 	@Email(message="your email is invalid")
 	private String email;
 	@Size(min = 4, message="username cannot be empty or less than four characters")
-	//@Column(updatable = false, unique = true) // properly test for this
 	private String username;
 	private String role;
 	@Size(min =6, message="password cannot be empty or less than six characters")
