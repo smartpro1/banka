@@ -16,10 +16,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import com.banka.services.CustomUserDetailsService;
+import com.ulisesbocchio.jasyptspringboot.annotation.EnableEncryptableProperties;
 
 import static com.banka.security.SecurityConstants.*;
 
 @Configuration
+@EnableEncryptableProperties
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(
 		securedEnabled = true,
