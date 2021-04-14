@@ -7,7 +7,7 @@ import static com.banka.model.UserStatus.DEFAULT_PIN_NOT_CHANGED;
 import static com.banka.model.UserStatus.REGISTRATION_NOT_CONFIRMED;
 import static com.banka.utils.Constants.TRANSFER_CHARGE;
 import static com.banka.utils.GenTransactionId.generateTransactionId;
-import static org.junit.Assert.assertNotNull;
+//import static org.junit.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -209,74 +209,74 @@ public class ServiceImplTest {
 	}
 	
 	
-	@Test
-	@DisplayName("Make Transfer Test")
-	public void shouldMakeTransferSuccessfully() {
-		// user makes transfer to user2
-		
-		
-		User user2 = new User("Mike Thompson", "M", "username2", 
-				"mike@yahoo.com", "password", "1234");
-		
-		BigDecimal acctBal = new BigDecimal("25000.00");
-	    UserProfile userProfile = new UserProfile("09062931318", "0212345678");
-		userProfile.setUser(user);
-		userProfile.setAccountBalance(acctBal);
-		
-	    UserProfile userProfile2 = new UserProfile("06062931318", "0212344778");
-		userProfile2.setUser(user2);
-		userProfile2.setAccountBalance(acctBal);
-		
-		TransferRequestPayload request = new TransferRequestPayload();
-		request.setBenfAcctNum(userProfile2.getAccountNumber());
-		request.setAmount("2500");
-		request.setDescription("Commission");
-		request.setPin("1234");
-		
-		String transactionId = generateTransactionId();
-		
-		String encryptedValue = "$2[a$10$EulgXiN/bEwjJZc2IqRgoOyTcJWNZp0STtgY0fZv9XSIWigMHiBN2";
-		Mockito.when(passwordEncoder.encode("1234")).thenReturn(encryptedValue);
-		Mockito.when(passwordEncoder.matches("1234", encryptedValue)).thenReturn(true);
-		Mockito.when(userRepo.getByUsername(user.getUsername())).thenReturn(user);
-		Mockito.when(userRepo.save(user)).thenReturn(user);
-		Mockito.when(userProfileRepo.getByAccountNumber(userProfile2.getAccountNumber())).thenReturn(userProfile2);
-		Mockito.when(userProfileRepo.getUserProfileByUserId(user.getId())).thenReturn(userProfile);
-	//	Mockito.when(generateTransactionId()).thenReturn(transactionId);
-		
-		
-		user.setTransferPin(passwordEncoder.encode("1234"));
-		user.setIsActive("ACTIVE");
-		
-		BigDecimal transferAmt = new BigDecimal(request.getAmount());
-		BigDecimal totalDebit = TRANSFER_CHARGE.add(transferAmt);
-		
-		BigDecimal userAcctBalBeforeTransfer = userProfile.getAccountBalance();
-		BigDecimal user2AcctBalBeforeTransfer = userProfile2.getAccountBalance();
-		
-		userProfile.setAccountBalance(userProfile.getAccountBalance().subtract(totalDebit));
-		userProfile2.setAccountBalance(userProfile2.getAccountBalance().add(transferAmt));
-		
-		BigDecimal userAcctBalAfterTransfer = userProfile.getAccountBalance();
-		BigDecimal user2AcctBalAfterTransfer = userProfile2.getAccountBalance();
-		
-		Transaction userTransaction = new Transaction(TransactionType.DEBIT.name(), totalDebit, userProfile2.getAccountNumber(), 
-                 "Commission",null, user, transactionId);
-		
-		 
-		List<Transaction> userTransactions = new ArrayList<>();
-		userTransactions.add(userTransaction);
-		Mockito.when(transactionRepo.getByUserId(user.getId())).thenReturn(userTransactions);
-		TransferSuccessResponse response = userService.makeTransfer(request, user.getUsername());
-	
-		assertTrue(user.getFullname().equals(response.getSender()));
-		assertEquals(1, response.getTransactions().size());
-		assertNotNull(response);
-		assertTrue(transactionId.contains(response.getTransactionId().substring(13, 24)));
-		
-		Assertions.assertEquals(userAcctBalBeforeTransfer,  userAcctBalAfterTransfer.add(totalDebit));
-		Assertions.assertEquals(user2AcctBalBeforeTransfer.add(transferAmt), user2AcctBalAfterTransfer);
-	}
+//	@Test
+//	@DisplayName("Make Transfer Test")
+//	public void shouldMakeTransferSuccessfully() {
+//		// user makes transfer to user2
+//		
+//		
+//		User user2 = new User("Mike Thompson", "M", "username2", 
+//				"mike@yahoo.com", "password", "1234");
+//		
+//		BigDecimal acctBal = new BigDecimal("25000.00");
+//	    UserProfile userProfile = new UserProfile("09062931318", "0212345678");
+//		userProfile.setUser(user);
+//		userProfile.setAccountBalance(acctBal);
+//		
+//	    UserProfile userProfile2 = new UserProfile("06062931318", "0212344778");
+//		userProfile2.setUser(user2);
+//		userProfile2.setAccountBalance(acctBal);
+//		
+//		TransferRequestPayload request = new TransferRequestPayload();
+//		request.setBenfAcctNum(userProfile2.getAccountNumber());
+//		request.setAmount("2500");
+//		request.setDescription("Commission");
+//		request.setPin("1234");
+//		
+//		String transactionId = generateTransactionId();
+//		
+//		String encryptedValue = "$2[a$10$EulgXiN/bEwjJZc2IqRgoOyTcJWNZp0STtgY0fZv9XSIWigMHiBN2";
+//		Mockito.when(passwordEncoder.encode("1234")).thenReturn(encryptedValue);
+//		Mockito.when(passwordEncoder.matches("1234", encryptedValue)).thenReturn(true);
+//		Mockito.when(userRepo.getByUsername(user.getUsername())).thenReturn(user);
+//		Mockito.when(userRepo.save(user)).thenReturn(user);
+//		Mockito.when(userProfileRepo.getByAccountNumber(userProfile2.getAccountNumber())).thenReturn(userProfile2);
+//		Mockito.when(userProfileRepo.getUserProfileByUserId(user.getId())).thenReturn(userProfile);
+//	//	Mockito.when(generateTransactionId()).thenReturn(transactionId);
+//		
+//		
+//		user.setTransferPin(passwordEncoder.encode("1234"));
+//		user.setIsActive("ACTIVE");
+//		
+//		BigDecimal transferAmt = new BigDecimal(request.getAmount());
+//		BigDecimal totalDebit = TRANSFER_CHARGE.add(transferAmt);
+//		
+//		BigDecimal userAcctBalBeforeTransfer = userProfile.getAccountBalance();
+//		BigDecimal user2AcctBalBeforeTransfer = userProfile2.getAccountBalance();
+//		
+//		userProfile.setAccountBalance(userProfile.getAccountBalance().subtract(totalDebit));
+//		userProfile2.setAccountBalance(userProfile2.getAccountBalance().add(transferAmt));
+//		
+//		BigDecimal userAcctBalAfterTransfer = userProfile.getAccountBalance();
+//		BigDecimal user2AcctBalAfterTransfer = userProfile2.getAccountBalance();
+//		
+//		Transaction userTransaction = new Transaction(TransactionType.DEBIT.name(), totalDebit, userProfile2.getAccountNumber(), 
+//                 "Commission",null, user, transactionId);
+//		
+//		 
+//		List<Transaction> userTransactions = new ArrayList<>();
+//		userTransactions.add(userTransaction);
+//		Mockito.when(transactionRepo.getByUserId(user.getId())).thenReturn(userTransactions);
+//		TransferSuccessResponse response = userService.makeTransfer(request, user.getUsername());
+//	
+//		assertTrue(user.getFullname().equals(response.getSender()));
+//		assertEquals(1, response.getTransactions().size());
+////		assertNotNull(response);
+//		assertTrue(transactionId.contains(response.getTransactionId().substring(13, 24)));
+//		
+//		Assertions.assertEquals(userAcctBalBeforeTransfer,  userAcctBalAfterTransfer.add(totalDebit));
+//		Assertions.assertEquals(user2AcctBalBeforeTransfer.add(transferAmt), user2AcctBalAfterTransfer);
+//	}
 	
 	@Test
 	@WithMockUser(username="admin", roles= {"CASHIER", "ADMIN"})
