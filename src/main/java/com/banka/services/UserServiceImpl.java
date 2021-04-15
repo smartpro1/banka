@@ -150,19 +150,23 @@ public class UserServiceImpl implements UserService{
 			String accountNumber = generateAccountNumber();
 			UserProfile userProfile = new UserProfile(phoneNumber, accountNumber);
 			userProfile.setUser(newUser);
+			
+			// create PinReset credentials for activation
+			String generatedToken = generateResetToken();
+			// send activation mail
+			sendMailForAccountActivation(newUser, transferPin, httpServletRequest, generatedToken);
 			userRepo.save(newUser);
 			userProfileRepo.save(userProfile);
 			//newUser.setUserProfile(userProfile);
 			//smsService.sendSMS(userRegPayload.getFullname(), phoneNumber, accountNumber);
 			
-			// create PinReset credentials for activation
-			String generatedToken = generateResetToken();
+			
 			createPinResetToken(newUser, generatedToken);
 			
 			// create registration bonus 
 			createRegistrationBonus(userProfile);
 			// send activation mail
-				sendMailForAccountActivation(newUser, transferPin, httpServletRequest, generatedToken);
+//				sendMailForAccountActivation(newUser, transferPin, httpServletRequest, generatedToken);
 		
 		}
 		
